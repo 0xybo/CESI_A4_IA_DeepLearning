@@ -219,8 +219,11 @@ class Dataset:
             threshold (int): the limit for the z-score, after which the data is dropped.
 
         Returns:
-            Dataset: A Dataset instance containing the remaining data from the Dataset .
+            Dataset: A Dataset instance containing the remaining data from the Dataset after normalization.
         """
+        tmp_zscore = (dataset.data['BMI'] - dataset.data['BMI'].mean()) / dataset.data['BMI'].std()
+tmp_zscore_data = dataset.data[tmp_zscore.abs() < 3]
+tmp_zscore_dataset = Dataset(tmp_zscore_data, dataset.target)
 
     def draw_distributions(self, columns: list | None = None, show: bool = False) -> None:
         """

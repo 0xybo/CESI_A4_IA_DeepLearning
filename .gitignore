@@ -212,3 +212,6 @@ pyrightconfig.json
 
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pythonvanilla,jupyternotebooks
+dataset/dataset_test.csv
+dataset/dataset_train.csv
+dataset/dataset_validation.csv

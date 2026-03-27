@@ -496,7 +496,7 @@ class Dataset:
         else:
             return Dataset(data_encoded, target=self.target)
 
-    def export_to_csv(self, dest: str = "dataset/output", train: int = 70, test: int = 15) -> None:
+    def export_to_csv(self, dest: str = "dataset/output", train: int = 70, test: int = 15) -> tuple["Dataset", "Dataset", "Dataset"] :
         """
         Exports the dataset to CSV files using an optional stratified split on the target.
 
@@ -521,25 +521,21 @@ class Dataset:
 
         data = self.data.copy(deep=True)
 
-        if self.target == "Diabetes_binary":
-            positives = data[data[self.target] == 1]
-            negatives = data[data[self.target] == 0]
-            if positives.empty or negatives.empty:
-                raise ValueError("Impossible de stratifier : pas de classes 0 ou 1 pour Diabetes_binary")
+        train_data = data.sample(frac=train / 100, random_state=42)
+        remaining = data.drop(train_data.index)
+        
+        positives = train_data[train_data[self.target] == 1]
+        negatives = train_data[train_data[self.target] == 0]
+        if positives.empty or negatives.empty:
+            raise ValueError("Impossible de stratifier : pas de classes 0 ou 1 pour Diabetes_binary")
 
-            n_train_per_class = min(
-                int(len(positives) * train / 100),
-                int(len(negatives) * train / 100),
-            )
+        n_train_per_class = min(len(positives), len(negatives))
 
-            train_pos = positives.sample(n=n_train_per_class, random_state=42)
-            train_neg = negatives.sample(n=n_train_per_class, random_state=42)
-            train_data = pd.concat([train_pos, train_neg]).sample(frac=1, random_state=42)
+        train_pos = positives.sample(n=n_train_per_class, random_state=42)
+        train_neg = negatives.sample(n=n_train_per_class, random_state=42)
+        train_data = pd.concat([train_pos, train_neg]).sample(frac=1, random_state=42)
 
-            remaining = data.drop(train_data.index)
-        else:
-            train_data = data.sample(frac=train / 100, random_state=42)
-            remaining = data.drop(train_data.index)
+
 
         test_data = remaining.sample(frac=(test / (test + validation)) if (test + validation) > 0 else 0, random_state=42) if test > 0 else pd.DataFrame(columns=data.columns)
         validation_data = remaining.drop(test_data.index) if validation > 0 else pd.DataFrame(columns=data.columns)
@@ -551,50 +547,7 @@ class Dataset:
         if not validation_data.empty:
             validation_data.to_csv(dest + "_validation.csv", index=False)
 
-        # Affiche la répartition des ensembles via Matplotlib
-        repartition = {
-            "train": len(train_data),
-            "test": len(test_data),
-            "validation": len(validation_data),
-        }
-
-        fig, ax = plt.subplots(figsize=(8, 5))
-        bars = ax.bar(repartition.keys(), repartition.values(), color=["tab:blue", "tab:orange", "tab:green"])
-        ax.set_title("Répartition des données après split")
-        ax.set_ylabel("Nombre de lignes")
-        ax.bar_label(bars)
-        ax.set_ylim(0, max(repartition.values()) * 1.1 if repartition.values() else 1)
-        plt.tight_layout()
-        plt.show()
-
-        # Affiche la distribution des classes dans le train si Diabetes_binary
-        if self.target == "Diabetes_binary" and not train_data.empty:
-            fig2, ax2 = plt.subplots(figsize=(6, 4))
-            sns.countplot(x=train_data[self.target], ax=ax2, palette=["tab:red", "tab:blue"])
-            ax2.set_title("Distribution des classes dans le train (0: Non-diabétique, 1: Diabétique)")
-            ax2.set_xlabel("Classe")
-            ax2.set_ylabel("Nombre d'échantillons")
-            ax2.bar_label(ax2.containers[0])
-            plt.tight_layout()
-            plt.show()
-
-        fig2, ax2 = plt.subplots(figsize=(6, 4))
-        sns.countplot(x=test_data[self.target], ax=ax2, palette=["tab:red", "tab:blue"])
-        ax2.set_title("Distribution des classes dans le test (0: Non-diabétique, 1: Diabétique)")
-        ax2.set_xlabel("Classe")
-        ax2.set_ylabel("Nombre d'échantillons")
-        ax2.bar_label(ax2.containers[0])
-        plt.tight_layout()
-        plt.show()
-        
-        fig2, ax2 = plt.subplots(figsize=(6, 4))
-        sns.countplot(x=validation_data[self.target], ax=ax2, palette=["tab:red", "tab:blue"])
-        ax2.set_title("Distribution des classes dans le validation (0: Non-diabétique, 1: Diabétique)")
-        ax2.set_xlabel("Classe")
-        ax2.set_ylabel("Nombre d'échantillons")
-        ax2.bar_label(ax2.containers[0])
-        plt.tight_layout()
-        plt.show()
+        return train_data, test_data, validation_data
         
     def to_csv(self, dest: str = "dataset/output", ) -> None:
         """

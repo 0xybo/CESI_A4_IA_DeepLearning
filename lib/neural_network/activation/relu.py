@@ -1,0 +1,3 @@
+from .base import ActivationFunction
+
+class ReLu(ActivationFunction): ...

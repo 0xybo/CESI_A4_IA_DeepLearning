@@ -5,7 +5,6 @@ from matplotlib.axes import Axes
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from lib.display import print_tabs
 
 
 class Dataset:

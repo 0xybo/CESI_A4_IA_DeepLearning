@@ -1,0 +1,102 @@
+classDiagram
+    class ActivationFunction {
+        + float compute(float x)
+        + float derivative(float x)
+    }
+
+    class Sigmoid {}
+    Sigmoid --> ActivationFunction
+    class ReLu {}
+    ReLu --> ActivationFunction
+    class Tanh {}
+    Tanh --> ActivationFunction
+    class SoftMax {}
+    SoftMax --> ActivationFunction
+
+    class LossFunction {
+        + float compute(ndarray y_train, ndarray y_pred)
+    }
+
+    class MeanSquaredError {}
+    MeanSquaredError --> LossFunction
+    class MeanAbsoluteError {}
+    MeanAbsoluteError --> LossFunction
+    class BinaryCrossEntropy {}
+    BinaryCrossEntropy --> LossFunction
+    class CategoricalCrossEntropy {}
+    CategoricalCrossEntropy --> LossFunction
+
+    class Layer {
+        + int neurons
+        + ndarray weights
+        + float dropout_rate
+        + ActivationFunction activation
+
+        + None __init__(int neurons, float dropout_rate, ActivationFunction activation)
+        + ndarray forward(ndarray inputs)
+        + ndarray backward(ndarray dz)
+    }
+    ActivationFunction o-- Layer
+
+    class Callback {
+        + NeuralNetwork neural_network
+
+        + None set_neural_network(NeuralNetwork neural_network)
+        + None on_batch_begin(batch: int)
+        + None on_batch_end(batch: int)
+        + None on_epoch_begin(epoch: int)
+        + None on_epoch_end(epoch: int)
+        + None on_train_batch_begin(batch: int)
+        + None on_train_batch_end(batch: int)
+        + None on_test_batch_begin(batch: int)
+        + None on_test_batch_end(batch: int)
+        + None on_predict_batch_begin(batch: int)
+        + None on_predict_batch_end(batch: int)
+        + None on_train_begin()
+        + None on_train_end()
+        + None on_test_begin()
+        + None on_test_end()
+        + None on_predict_begin()
+        + None on_predict_end()
+    }
+    
+    class NeuralNetwork {
+        + Layer[] layers
+        + LossFunction loss
+        + Callback[] callbacks
+        + bool fiting
+        + Dataframe history - loss, validation
+        + ndarray x_train
+        + ndarray y_train
+        + int epochs
+        + int epoch
+        + int batch_size
+        + int validation_split
+    
+        + None __init__(Layer[] layers)
+        + None addLayer(Layer layer)
+        + None addCallback(Callback callback)
+        + ndarray fit(ndarray x_train, ndarray y_train, int epochs, int batch_size, int validation_split, int learning_rate)
+        + float predict(ndarray x)
+    }
+    Layer o-- NeuralNetwork
+    LossFunction o-- NeuralNetwork
+    Callback o-- NeuralNetwork
+ 
+    class Evaluation {
+        + NeuralNetwork neural_network
+        + ndarray x_validation
+        + ndarray y_validation
+        + tuple[int] _confusion_matrix
+
+        + None __init__(ndarray x_validation?, ndarray y_validation?)
+        + Dataframe validate(NeuralNetwork neural_network)
+        + float accuracy()
+        + float precision()
+        + float recall()
+        + float f1_score()
+        + float auc()
+        + None draw_roc()
+        + tuple[int] confusion_matrix()
+    }
+    Evaluation --* NeuralNetwork

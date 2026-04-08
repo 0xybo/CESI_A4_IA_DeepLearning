@@ -41,7 +41,7 @@ class NeuralNetwork:
     loss: LossFunction
     callbacks: List[Callback]
     fiting: bool
-    history: Optional[List[History]]
+    history: List[History]
     x_train: Optional[np.ndarray]
     y_train: Optional[np.ndarray]
     epochs: Optional[int]
@@ -55,7 +55,7 @@ class NeuralNetwork:
         self.loss = loss
         self.callbacks = []
         self.fiting = False
-        self.history = None
+        self.history = []
         self.x_train = None
         self.y_train = None
         self.epochs = None
@@ -91,6 +91,11 @@ class NeuralNetwork:
         for i in range(1, len(self.layers)):
             self.layers[i].set_nb_inputs(self.layers[i - 1].neurons)
 
+    def __callbacks(self, event: str, *args, **kwargs) -> None:
+        for callback in self.callbacks:
+            getattr(callback, event)(self, *args, **kwargs)
+            getattr(callback, f"{event}_async")(self, *args, **kwargs)
+
     def predict(self, x: np.ndarray) -> np.ndarray:
         """
         Make a prediction with the neural network
@@ -105,6 +110,22 @@ class NeuralNetwork:
         for layer in self.layers:
             x = layer.forward(x)
         return x
+    
+    def predicts(self, x: np.ndarray) -> np.ndarray:
+        """
+        Make predictions with the neural network
+
+        Args:
+        x: np.ndarray - input data
+
+        Returns:
+        np.ndarray - predicted output
+        """
+
+        predictions = []
+        for i in range(x.shape[0]):
+            predictions.append(self.predict(x[i : i + 1]))
+        return np.array(predictions).squeeze()
 
     def fit(
         self,
@@ -139,8 +160,20 @@ class NeuralNetwork:
 
         self.history = []
 
+        self.__callbacks("on_train_begin")
+
         for epoch in range(epochs):
+            # Check if the training has been cancelled by a callback
+            # For example, a callback like EarlyStopping can set 
+            # self.fiting to False to stop the training process early
+            if not self.fiting:
+                self.__callbacks("on_train_cancel")
+                break
+
             self.epoch = epoch
+
+            self.__callbacks("on_epoch_begin", epoch)
+
             # Shuffle the training data
             indices = np.arange(x_train.shape[0])
             np.random.shuffle(indices)
@@ -154,17 +187,19 @@ class NeuralNetwork:
             x_val_split = x_train[split_index:]
             y_val_split = y_train[split_index:]
 
-            loss_value: float = 0.0
+            loss_value = 0.0
             x_batch: np.ndarray = np.array([]) 
             y_batch: np.ndarray = np.array([])
 
             # Train the model on the training set
             for i in range(0, x_train_split.shape[0], batch_size):
+                self.__callbacks("on_batch_begin", i // batch_size)
+                
                 x_batch = x_train_split[i : i + batch_size]
                 y_batch = y_train_split[i : i + batch_size]
 
                 # Forward pass
-                y_pred = self.predict(x_batch)
+                y_pred = self.predicts(x_batch)
 
                 # Compute loss and gradients
                 loss_value = self.loss.compute(y_batch, y_pred)
@@ -174,8 +209,10 @@ class NeuralNetwork:
                 for layer in reversed(self.layers):
                     loss_gradients = layer.backward(loss_gradients, learning_rate)
 
+                self.__callbacks("on_batch_end", i // batch_size)
+
             # Evaluate the model on the validation set
-            val_pred = self.predict(x_val_split)
+            val_pred = self.predicts(x_val_split)
             val_loss_value = self.loss.compute(y_val_split, val_pred)
 
             # Save history
@@ -187,6 +224,7 @@ class NeuralNetwork:
                 "y_train": y_batch,
             })
 
-            # Call callbacks
-            for callback in self.callbacks:
-                callback.on_epoch_end(epoch)
+            self.__callbacks("on_epoch_end", epoch)
+
+        self.__callbacks("on_train_end")
+        self.fiting = False

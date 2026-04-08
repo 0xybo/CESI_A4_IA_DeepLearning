@@ -41,7 +41,7 @@ class NeuralNetwork:
     loss: LossFunction
     callbacks: List[Callback]
     fiting: bool
-    history: Optional[List[History]]
+    history: List[History]
     x_train: Optional[np.ndarray]
     y_train: Optional[np.ndarray]
     epochs: Optional[int]
@@ -55,7 +55,7 @@ class NeuralNetwork:
         self.loss = loss
         self.callbacks = []
         self.fiting = False
-        self.history = None
+        self.history = []
         self.x_train = None
         self.y_train = None
         self.epochs = None
@@ -154,7 +154,7 @@ class NeuralNetwork:
             x_val_split = x_train[split_index:]
             y_val_split = y_train[split_index:]
 
-            loss_value: float = 0.0
+            loss_value = 0.0
             x_batch: np.ndarray = np.array([]) 
             y_batch: np.ndarray = np.array([])
 

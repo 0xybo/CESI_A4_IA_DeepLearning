@@ -1,0 +1,9 @@
+[tool.pylint.messages_control]
+
+# Disable specific checks (e.g., missing docstrings or line-too-long)
+
+disable = [
+    "R0902",  # Too many instance attributes
+    "R0913",  # Too many arguments
+    "R0917",  # Too many positional arguments
+]

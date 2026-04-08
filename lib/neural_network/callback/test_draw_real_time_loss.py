@@ -1,3 +1,7 @@
+"""
+Test the DrawRealTimeLoss callback to ensure it correctly updates the loss plot during training.
+"""
+
 import asyncio
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,6 +11,12 @@ from ..loss.binary_cross_entropy import BinaryCrossEntropy
 
 
 class NeuralNetworkPlaceholder(NeuralNetwork):
+    """
+    Placeholder Neural Network for testing the DrawRealTimeLoss callback.
+    This class simulates a neural network with a predefined history of training losses and
+    predictions.
+    """
+
     def __init__(self):
         super().__init__(layers=[], loss=BinaryCrossEntropy())
         self.history = [
@@ -21,6 +31,11 @@ class NeuralNetworkPlaceholder(NeuralNetwork):
 
 
 async def test_draw_real_time_loss():
+    """
+    Test the DrawRealTimeLoss callback by simulating a training process with a placeholder neural
+    network.
+    The test checks if the callback correctly updates the loss plot at each epoch.
+    """
     neural_network_placeholder = NeuralNetworkPlaceholder()
     callback = DrawRealTimeLoss()
 

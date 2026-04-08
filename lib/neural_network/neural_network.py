@@ -5,18 +5,22 @@ Neural Network class
 from __future__ import annotations
 from typing import List, Optional, TypedDict
 import numpy as np
-import pandas as pd
 from .layer import Layer
-from .callback.base import Callback
-from .loss.base import LossFunction
+from .callback import Callback
+from .loss import LossFunction
 
 
 class History(TypedDict):
+    """
+    History of the training process
+    """
+
     loss: float
     val_loss: float
     y_pred: np.ndarray
     x_train: np.ndarray
     y_train: np.ndarray
+
 
 class NeuralNetwork:
     """
@@ -110,7 +114,7 @@ class NeuralNetwork:
         for layer in self.layers:
             x = layer.forward(x)
         return x
-    
+
     def predicts(self, x: np.ndarray) -> np.ndarray:
         """
         Make predictions with the neural network
@@ -140,7 +144,8 @@ class NeuralNetwork:
         Train the neural network
 
         Features :
-        - Cross-validation : split the training data into training and validation sets and evaluate the model on the validation set at each epoch
+        - Cross-validation : split the training data into training and validation sets and evaluate
+          the model on the validation set at each epoch
 
         Args:
             x_train: np.ndarray - training data
@@ -164,7 +169,7 @@ class NeuralNetwork:
 
         for epoch in range(epochs):
             # Check if the training has been cancelled by a callback
-            # For example, a callback like EarlyStopping can set 
+            # For example, a callback like EarlyStopping can set
             # self.fiting to False to stop the training process early
             if not self.fiting:
                 self.__callbacks("on_train_cancel")
@@ -188,13 +193,13 @@ class NeuralNetwork:
             y_val_split = y_train[split_index:]
 
             loss_value = 0.0
-            x_batch: np.ndarray = np.array([]) 
+            x_batch: np.ndarray = np.array([])
             y_batch: np.ndarray = np.array([])
 
             # Train the model on the training set
             for i in range(0, x_train_split.shape[0], batch_size):
                 self.__callbacks("on_batch_begin", i // batch_size)
-                
+
                 x_batch = x_train_split[i : i + batch_size]
                 y_batch = y_train_split[i : i + batch_size]
 
@@ -216,13 +221,15 @@ class NeuralNetwork:
             val_loss_value = self.loss.compute(y_val_split, val_pred)
 
             # Save history
-            self.history.append({
-                "loss": loss_value,
-                "val_loss": val_loss_value,
-                "y_pred": val_pred,
-                "x_train": x_batch,
-                "y_train": y_batch,
-            })
+            self.history.append(
+                {
+                    "loss": loss_value,
+                    "val_loss": val_loss_value,
+                    "y_pred": val_pred,
+                    "x_train": x_batch,
+                    "y_train": y_batch,
+                }
+            )
 
             self.__callbacks("on_epoch_end", epoch)
 

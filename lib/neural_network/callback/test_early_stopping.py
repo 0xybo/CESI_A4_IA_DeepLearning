@@ -1,11 +1,21 @@
+"""
+Test the EarlyStopping callback to ensure it correctly stops training when the validation loss does
+not improve for a specified number of epochs (patience).
+"""
+
 import numpy as np
-import matplotlib.pyplot as plt
 from .early_stopping import EarlyStopping
 from ..neural_network import NeuralNetwork
 from ..loss.binary_cross_entropy import BinaryCrossEntropy
 
 
 class NeuralNetworkPlaceholder(NeuralNetwork):
+    """
+    Placeholder Neural Network for testing the EarlyStopping callback.
+    This class simulates a neural network with a predefined history of training losses and
+    predictions.
+    """
+
     def __init__(self):
         super().__init__(layers=[], loss=BinaryCrossEntropy())
         self.history = [
@@ -20,6 +30,13 @@ class NeuralNetworkPlaceholder(NeuralNetwork):
 
 
 def test_early_stopping():
+    """
+    Test the EarlyStopping callback by simulating a training process with a placeholder neural
+    network.
+    The test checks if the callback correctly stops training after the validation loss does not
+    improve for a specified number of epochs (patience).
+    """
+
     neural_network_placeholder = NeuralNetworkPlaceholder()
     callback = EarlyStopping(patience=3)
 
@@ -42,7 +59,11 @@ def test_early_stopping():
             }
         )
         print(
-            f"Epoch {epoch + 1}: val_loss = {neural_network_placeholder.history[-1]['val_loss']:.4f}, best_loss = {callback.best_loss:.4f}, counter = {callback.counter}"
+            (
+                f"Epoch {epoch + 1}:"
+                f"val_loss = {neural_network_placeholder.history[-1]['val_loss']:.4f},"
+                f"best_loss = {callback.best_loss:.4f}, counter = {callback.counter}"
+            )
         )
 
         callback.on_epoch_end(neural_network_placeholder, epoch)

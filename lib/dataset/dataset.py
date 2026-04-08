@@ -495,14 +495,14 @@ class Dataset:
         else:
             return Dataset(data_encoded, target=self.target)
 
-    def export_to_csv(self, dest: str = "dataset/output", train: int = 70, test: int = 15) -> tuple["Dataset", "Dataset", "Dataset"] :
+    def export_to_csv(self, dest: str = "dataset/output", train: int = 80, validation: int = 20) -> tuple["Dataset", "Dataset"] :
         """
         Exports the dataset to CSV files using an optional stratified split on the target.
 
         Args:
             dest (str, optional): Base path for output CSV files. Defaults to "dataset/output".
-            train (int, optional): Percentage of rows to include in the training set. Defaults to 70.
-            test (int, optional): Percentage of rows to include in the testing set. Defaults to 15.
+            train (int, optional): Percentage of rows to include in the training set. Defaults to 80.
+            validation (int, optional): Percentage of rows to include in the validation set. Defaults to 20.
 
         The remaining part becomes validation set.
         Le jeu de train est stratifié sur la colonne cible et rééquilibré en 50/50 si la colonne se nomme Diabetes_binary.
@@ -511,12 +511,10 @@ class Dataset:
         if self.target not in self.data.columns:
             raise ValueError(f"Target column '{self.target}' introuvable dans le DataFrame.")
 
-        if not (0 <= train <= 100 and 0 <= test <= 100):
-            raise ValueError("train et test doivent être des pourcentages entre 0 et 100")
-
-        validation = 100 - (train + test)
-        if validation < 0:
-            raise ValueError("La somme de train et test ne peut pas dépasser 100.")
+        if not (0 <= train <= 100 and 0 <= validation <= 100):
+            raise ValueError("train et validation doivent être des pourcentages entre 0 et 100")
+        if not (train + validation == 100):
+            raise ValueError("La somme de train et validation doit être égale à 100")
 
         data = self.data.copy(deep=True)
 
@@ -534,19 +532,14 @@ class Dataset:
         train_neg = negatives.sample(n=n_train_per_class, random_state=42)
         train_data = pd.concat([train_pos, train_neg]).sample(frac=1, random_state=42)
 
-
-
-        test_data = remaining.sample(frac=(test / (test + validation)) if (test + validation) > 0 else 0, random_state=42) if test > 0 else pd.DataFrame(columns=data.columns)
-        validation_data = remaining.drop(test_data.index) if validation > 0 else pd.DataFrame(columns=data.columns)
+        validation_data = remaining if validation > 0 else pd.DataFrame(columns=data.columns)
 
         if not train_data.empty:
             train_data.to_csv(dest + "_train.csv", index=False)
-        if not test_data.empty:
-            test_data.to_csv(dest + "_test.csv", index=False)
         if not validation_data.empty:
             validation_data.to_csv(dest + "_validation.csv", index=False)
 
-        return train_data, test_data, validation_data
+        return train_data, validation_data
         
     def to_csv(self, dest: str = "dataset/output", ) -> None:
         """

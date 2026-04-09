@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import List, Optional, TypedDict
 import numpy as np
 from .layer import Layer
-from .callback import Callback
+from .callback.base import Callback
 from .loss import LossFunction
 
 

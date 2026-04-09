@@ -1,5 +1,9 @@
+"""
+Implementation of the base class for activation functions.
+"""
 from __future__ import annotations
 from abc import ABC, abstractmethod
+import numpy as np
 
 # class ActivationFunction {
 #     + float compute(float x)
@@ -7,7 +11,10 @@ from abc import ABC, abstractmethod
 # }
 
 class ActivationFunction(ABC):
+    """
+    Abstract base class representing an activation function in a neural network.
+    """
     @abstractmethod
-    def compute(self, x: float) -> float: ...
+    def compute(self, x: np.ndarray) -> np.ndarray: ...
     @abstractmethod
-    def derivative(self, x: float) -> float: ...
+    def derivative(self, x: np.ndarray) -> np.ndarray: ...

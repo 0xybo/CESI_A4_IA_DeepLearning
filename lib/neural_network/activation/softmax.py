@@ -1,3 +1,0 @@
-from .base import ActivationFunction
-
-class SoftMax(ActivationFunction): ...

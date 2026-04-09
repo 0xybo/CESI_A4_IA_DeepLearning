@@ -107,30 +107,3 @@ class Layer:
 
         # return a matrix of shape (nb_inputs, 1)
         return self.weights.T @ dz
-
-    def first_layer_backward(self, cost_gradient: np.ndarray, learning_rate: float) -> np.ndarray:
-        """
-        Performs the backward pass for the first layer of the network.
-        cost_gradient must be of shape (output neurons, 1).
-
-        Args:
-            cost_gradient (np.ndarray): The gradient of the cost function 
-                with respect to the output of the first layer.
-            learning_rate (float): The learning rate for updating the weights.
-        
-        Returns:
-            np.ndarray: The product of the gradient of the loss with respect to the output of the
-              layer and the weights of the layer.
-        """
-        # dz is neurones lines and 1 column.
-        dz = cost_gradient * self.activation.derivative(self.last_aggregation_values)
-
-        # dw is neurons lines and nb_inputs columns.
-        dw = dz @ self.last_inputs.T
-        db = dz
-
-        self.weights -= dw * learning_rate
-        self.bias -= db * learning_rate
-
-        # return a matrix of shape (nb_inputs, 1)
-        return self.weights.T @ dz

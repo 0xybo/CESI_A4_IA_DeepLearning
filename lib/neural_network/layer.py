@@ -42,8 +42,7 @@ class Layer:
             self,
             neurons: int,
             dropout_rate: float,
-            activation: ActivationFunction,
-            nb_inputs: int = None
+            activation: ActivationFunction
         ) -> None:
         """
         Initializes the Layer instance.
@@ -52,12 +51,11 @@ class Layer:
             neurons (int): The number of neurons in the layer.
             dropout_rate (float): The dropout rate for regularization.
             activation (ActivationFunction): The activation function used in the layer.
-            nb_inputs (int): The number of input features, None for not specified (default: None).
         """
         self.neurons = neurons
         self.dropout_rate = dropout_rate
         self.activation = activation
-        self.weights = np.random.rand(neurons, nb_inputs) if nb_inputs is not None else np.array([])
+        self.weights = np.array([])
         self.bias = np.random.rand(neurons, 1)
 
     def set_nb_inputs(self, nb_inputs: int) -> None:

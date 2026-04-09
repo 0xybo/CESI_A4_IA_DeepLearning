@@ -3,6 +3,18 @@ from ..neural_network import NeuralNetwork
 
 
 class EarlyStopping(Callback):
+    """
+    Early stopping callback to stop training when validation loss does not improve for a specified number of epochs (patience).
+
+    Early stopping is a regularization technique used to prevent overfitting in neural networks. It monitors the validation loss during training and stops the training process if the validation loss does not improve for a specified number of consecutive epochs (patience).
+
+    Parameters:
+    - patience (int): Number of epochs to wait for improvement before stopping training. Default is 5.
+    Attributes:
+    - best_loss (float): The best validation loss observed during training.
+    - counter (int): Counter to track the number of epochs since the last improvement in validation loss.
+    """
+
     patience: int
     best_loss: float
     counter: int

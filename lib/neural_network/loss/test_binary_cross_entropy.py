@@ -1,8 +1,15 @@
+"""
+Unit tests for the Binary Cross Entropy loss function.
+"""
+
 import numpy as np
 from .binary_cross_entropy import BinaryCrossEntropy
 
 
 def test_binary_cross_entropy_compute():
+    """
+    Test the compute method of the Binary Cross Entropy loss function with a simple example.
+    """
     loss = BinaryCrossEntropy()
     y_true = np.array([1, 0, 1, 0])
     y_pred = np.array([0.9, 0.1, 0.8, 0.2])
@@ -16,12 +23,17 @@ def test_binary_cross_entropy_compute():
         / 4
     )
     loss_value = loss.compute(y_true, y_pred)
-    assert np.isclose(
-        loss_value, expected_loss
-    ), f"Binary Cross Entropy loss calculation is incorrect. Got: {loss_value} instead of {expected_loss}"
+    assert np.isclose(loss_value, expected_loss), (
+        "Binary Cross Entropy loss calculation is incorrect."
+        f"Got: {loss_value} instead of {expected_loss}"
+    )
 
 
 def test_binary_cross_entropy_compute_with_zeros():
+    """
+    Test the compute method of the Binary Cross Entropy loss function with predicted probabilities
+    of 0, which should be clipped to prevent log(0) issues.
+    """
     loss = BinaryCrossEntropy()
     y_true = np.array([1, 0, 1, 0])
     y_pred = np.array([0.0, 0.0, 0.0, 0.0])  # This will cause log(0) issues
@@ -35,15 +47,21 @@ def test_binary_cross_entropy_compute_with_zeros():
         / 4
     )
     loss_value = loss.compute(y_true, y_pred)
-    assert np.isclose(
-        loss_value, expected_loss
-    ), f"Binary Cross Entropy loss calculation with zeros is incorrect. Got: {loss_value} instead of {expected_loss}"
+    assert np.isclose(loss_value, expected_loss), (
+        "Binary Cross Entropy loss calculation with zeros is incorrect."
+        f"Got: {loss_value} instead of {expected_loss}"
+    )
 
 
 def test_binary_cross_entropy_compute_with_ones():
+    """
+    Test the compute method of the Binary Cross Entropy loss function with predicted probabilities
+    of 1, which should be clipped to prevent log(0) issues.
+    """
+
     loss = BinaryCrossEntropy()
     y_true = np.array([1, 0, 1, 0])
-    y_pred = np.array([1.0, 1.0, 1.0, 1.0])  # This will cause log(1) issues
+    y_pred = np.array([1.0, 1.0, 1.0, 1.0])
     expected_loss = (
         -(
             (1 * np.log(1.0) + (1 - 1) * np.log(1 - 1.0 + 1e-15))
@@ -54,12 +72,17 @@ def test_binary_cross_entropy_compute_with_ones():
         / 4
     )
     loss_value = loss.compute(y_true, y_pred)
-    assert np.isclose(
-        loss_value, expected_loss
-    ), f"Binary Cross Entropy loss calculation with ones is incorrect. Got: {loss_value} instead of {expected_loss}"
+    assert np.isclose(loss_value, expected_loss), (
+        "Binary Cross Entropy loss calculation with ones is incorrect."
+        f"Got: {loss_value} instead of {expected_loss}"
+    )
 
 
 def test_binary_cross_entropy_compute_with_mismatched_shapes():
+    """
+    Test the compute method of the Binary Cross Entropy loss function with mismatched shapes for
+    y_true and y_pred, which should raise an error.
+    """
     loss = BinaryCrossEntropy()
     y_true = np.array([1, 0, 1])
     y_pred = np.array([0.9, 0.1])  # Mismatched shape
@@ -73,6 +96,9 @@ def test_binary_cross_entropy_compute_with_mismatched_shapes():
 
 
 def test_binary_cross_entropy_derivative():
+    """
+    Test the derivative method of the Binary Cross Entropy loss function with a simple example.
+    """
     loss = BinaryCrossEntropy()
     y_true = np.array([1, 0, 1, 0])
     y_pred = np.array([0.9, 0.1, 0.8, 0.2])
@@ -84,9 +110,11 @@ def test_binary_cross_entropy_derivative():
             (0.2 - 0) / (0.2 * 0.8 * 4),
         ]
     )
-    assert np.allclose(
-        loss.derivative(y_true, y_pred), expected_derivative
-    ), "Binary Cross Entropy derivative calculation is incorrect."
+    loss_derivative = loss.derivative(y_true, y_pred)
+    assert np.allclose(loss_derivative, expected_derivative), (
+        "Binary Cross Entropy derivative calculation is incorrect."
+        f"Got: {loss_derivative} instead of {expected_derivative}"
+    )
 
 
 if __name__ == "__main__":

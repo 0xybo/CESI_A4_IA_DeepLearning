@@ -1,12 +1,32 @@
+"""
+Class DrawRealTimeLoss: A callback to draw real-time loss and validation loss during training using
+Matplotlib.
+"""
+
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
-from .base import Callback 
-from ..neural_network import NeuralNetwork
+
+from . import Callback
+from .. import NeuralNetwork
 
 
-class DrawRealTimeLoss(Callback):
+class DrawRealTimeLoss(Callback):  # pylint: disable=too-few-public-methods
+    """
+    Callback to draw real-time loss and validation loss during training.
+
+    This callback uses Matplotlib to create a real-time plot of the training loss and validation
+    loss after each epoch. It updates the plot with the latest loss values from the neural
+    network's history.
+
+    Attributes:
+    - figure (Figure): The Matplotlib figure object for the plot.
+    - axes (Axes): The Matplotlib axes object for the plot.
+    - loss_line (Line2D): The line object for the training loss.
+    - val_loss_line (Line2D): The line object for the validation loss.
+    """
+
     figure: Figure
     axes: Axes
     loss_line: Line2D
@@ -25,7 +45,11 @@ class DrawRealTimeLoss(Callback):
         self.axes.set_ylabel("Loss")
         self.axes.legend()
 
-    async def on_epoch_end_async(self, neural_network: "NeuralNetwork", epoch: int) -> None:
+    async def on_epoch_end_async(  # pylint: disable=missing-function-docstring
+        self,
+        neural_network: "NeuralNetwork",
+        epoch: int,  # pylint: disable=unused-argument
+    ) -> None:
         history = neural_network.history
         loss = [h["loss"] for h in history]
         val_loss = [h["val_loss"] for h in history]

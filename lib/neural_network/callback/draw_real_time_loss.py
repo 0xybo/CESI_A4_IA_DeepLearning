@@ -8,8 +8,8 @@ from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
 
-from . import Callback
-from .. import NeuralNetwork
+from .base import Callback
+from ..neural_network import NeuralNetwork
 
 
 class DrawRealTimeLoss(Callback):  # pylint: disable=too-few-public-methods

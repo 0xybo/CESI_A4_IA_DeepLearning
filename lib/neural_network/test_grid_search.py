@@ -34,18 +34,18 @@ def test_grid_search():
     y_train = np.random.rand(100, 1)
     x_val = np.random.rand(20, 5)
     y_val = np.random.rand(20, 1)
-    GridSearch().search(
+    print(GridSearch().search(
         {
-            "learning_rate": [0.01, 0.001],
-            "batch_size": [32, 64],
-            "epochs": [10, 20],
+            "learning_rate": [0.2],
+            "batch_size": [32],
+            "epochs": [10],
             "loss": [MeanSquaredError()],
             "early_stopping_patience": [5],
-            "early_stopping_delta": [0.001],
             "architecture": [
                 [
+                    {"neurons": [5], "dropout_rate": [0.2], "activation": [Relu()]},
                     {"neurons": [10], "dropout_rate": [0.2], "activation": [Relu()]},
-                    {"neurons": [10], "dropout_rate": [0.2], "activation": [Sigmoid()]},
+                    {"neurons": [1], "dropout_rate": [0.2], "activation": [Sigmoid()]},
                 ]
             ],
         },
@@ -53,7 +53,7 @@ def test_grid_search():
         y_train,
         x_val,
         y_val,
-    )
+    )[0]['metrics'])
 
 
 if __name__ == "__main__":

@@ -93,15 +93,31 @@ class Layer:
             np.ndarray: The product of the gradient of the loss with respect to the output of the
               layer and the weights of the layer.
         """
+        print('=' * 80)
+        print('product_last', product_last.shape)
+        print('self.last_aggregation_values', self.last_aggregation_values.shape)
         # dz is neurones lines and 1 column.
         dz = product_last * self.activation.derivative(self.last_aggregation_values)
 
         # dw is neurons lines and nb_inputs columns.
         dw = dz @ self.last_inputs.T
         db = dz
-
+        
+        print('=' * 80)
+        print('dz', dz.shape)
+        print('dw', dw.shape)
+        print('db', db.shape)
+        print('self.weights', self.weights.shape)
+        print('self.bias', self.bias.shape)
+        print('self.last_inputs', self.last_inputs.shape)
+        print('np.mean(db, axis=1, keepdims=True)', np.mean(db, axis=1, keepdims=True).shape)
+        
         self.weights -= dw * learning_rate
-        self.bias -= db * learning_rate
+        self.bias -= np.mean(db, axis=1, keepdims=True) * learning_rate
+        
+        print('=' * 80)
+        print('self.bias', self.bias.shape)
+        print('self.last_inputs', self.last_inputs.shape)
 
         # return a matrix of shape (nb_inputs, 1)
         return self.weights.T @ dz

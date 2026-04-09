@@ -208,11 +208,14 @@ class NeuralNetwork:
                 y_batch = y_train_split[i : i + batch_size]
 
                 # Forward pass
-                y_pred = self.predicts(x_batch)
+                y_pred = self.predict(x_batch)
 
                 # Compute loss and gradients
                 loss_value = self.loss.compute(y_batch, y_pred)
-                loss_gradients = self.loss.derivative(y_batch, y_pred)
+                loss_gradients = self.loss.derivative(y_batch.T, y_pred)
+                
+                print('=' * 80)
+                print('loss_gradients', loss_gradients.shape)
 
                 # Backward pass
                 for layer in reversed(self.layers):

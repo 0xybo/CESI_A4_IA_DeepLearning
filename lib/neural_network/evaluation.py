@@ -43,8 +43,9 @@ class Evaluation:
         """
         self.x_validation = x_validation
         self.y_validation = y_validation
+        self._confusion_matrix = None
         
-    def validate(self, neural_network: NeuralNetwork) -> pd.DataFrame: 
+    def validate(self, neural_network: NeuralNetwork) -> Dict: 
         """
         Validates the neural network and returns a DataFrame containing the calculated metrics.
         Args:
@@ -60,10 +61,10 @@ class Evaluation:
             'Precision': self.precision(),
             'Recall': self.recall(),
             'F1 Score': self.f1_score(),
-            'AUC': self.auc()
+            # 'AUC': self.auc()
         }
         
-        return pd.DataFrame([metrics])
+        return metrics
    
     def accuracy(self) -> float:
         """
@@ -129,15 +130,18 @@ class Evaluation:
         Actions:
             Plots the ROC curve using matplotlib.
         """
-        y_reel: np.ndarray
-        y_pred: np.ndarray
+        y_reel= np.ndarray([])
+        y_pred= np.ndarray([])
         history_list: np.ndarray = self.neural_network.history
         for echo in history_list:
             y_reel = np.append(y_reel, echo['y_train'])
             y_pred = np.append(y_pred, echo['y_pred'])
-        
+
         indices_tries = np.argsort(y_pred)
-        
+        print('=' * 80)
+        print('y_reel', y_reel.shape)
+        print('y_pred', y_pred.shape)
+        print('=' * 80)
         y_reel = y_reel[indices_tries]
         y_pred = y_pred[indices_tries]
 
@@ -178,7 +182,6 @@ class Evaluation:
             y (Optional[np.ndarray]): The target data to use for calculating the confusion matrix. Default is None.
         """
         if self._confusion_matrix is None:
-        
             if x is None:
                 x = self.x_validation
             if y is None:
@@ -195,4 +198,7 @@ class Evaluation:
                 np.sum((y_pred == 0) & (y == 0)),   # true negatives
                 np.sum((y_pred == 0) & (y == 1))    # false negatives
             )
+
+        print(self._confusion_matrix) 
+        print(y_pred)
         return self._confusion_matrix

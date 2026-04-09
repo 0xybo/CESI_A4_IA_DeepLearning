@@ -53,8 +53,9 @@ class NeuralNetwork:
     batch_size: Optional[int]
     validation_split: Optional[float]
     learning_rate: Optional[float]
+    inputs: int
 
-    def __init__(self, layers: List[Layer], loss: LossFunction) -> None:
+    def __init__(self, layers: List[Layer], loss: LossFunction, inputs: int) -> None:
         self.layers = layers
         self.loss = loss
         self.callbacks = []
@@ -67,6 +68,7 @@ class NeuralNetwork:
         self.batch_size = None
         self.validation_split = None
         self.learning_rate = None
+        self.inputs = inputs
 
         self.__param_layers()
 
@@ -92,6 +94,7 @@ class NeuralNetwork:
         self.callbacks.append(callback)
 
     def __param_layers(self) -> None:
+        self.layers[0].set_nb_inputs(self.inputs)
         for i in range(1, len(self.layers)):
             self.layers[i].set_nb_inputs(self.layers[i - 1].neurons)
 
@@ -111,6 +114,7 @@ class NeuralNetwork:
         np.ndarray - predicted output
         """
 
+        x = x.T
         for layer in self.layers:
             x = layer.forward(x)
         return x

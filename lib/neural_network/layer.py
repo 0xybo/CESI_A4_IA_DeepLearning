@@ -28,6 +28,7 @@ class Layer:
     last_aggregation_values: np.ndarray
     last_inputs: np.ndarray
     dropout_mask: np.ndarray
+    rng: np.random.Generator
 
     def __init__(
         self,
@@ -48,6 +49,7 @@ class Layer:
         self.activation = activation
         self.weights = np.array([])
         self.bias = np.zeros((neurons, 1))
+        self.rng = np.random.default_rng(42)
 
     def set_nb_inputs(self, nb_inputs: int) -> None:
         """
@@ -57,7 +59,7 @@ class Layer:
         Args:
             nb_inputs (int): The number of input features.
         """
-        self.weights = np.random.randn(self.neurons, nb_inputs) * np.sqrt(
+        self.weights = self.rng.standard_normal((self.neurons, nb_inputs)) * np.sqrt(
             2.0 / nb_inputs
         )
 
@@ -74,7 +76,7 @@ class Layer:
         a = self.activation.compute(z)
 
         if training and self.dropout_rate > 0:
-            self.dropout_mask = (np.random.rand(*a.shape) > self.dropout_rate).astype(float)
+            self.dropout_mask = (self.rng.random(a.shape) > self.dropout_rate).astype(float)
             a *= self.dropout_mask
             a /= (1.0 - self.dropout_rate)
 
@@ -105,7 +107,7 @@ class Layer:
 
         # Gradient for previous layer: shape (nb_inputs, batch_size)
         grad = self.weights.T @ dz
-        
+
         # Update weights and biases
         self.weights -= dw * learning_rate
         self.bias -= db * learning_rate

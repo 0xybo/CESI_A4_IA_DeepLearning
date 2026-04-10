@@ -113,7 +113,7 @@ class NeuralNetwork:
                 getattr(callback, f"{event}_async")(self, *args, **kwargs)
             )
 
-    def predict(self, x: np.ndarray) -> np.ndarray:
+    def predict(self, x: np.ndarray, training: bool = False) -> np.ndarray:
         """
         Make a prediction with the neural network
 
@@ -129,7 +129,7 @@ class NeuralNetwork:
                 "Neural network not trained yet. Please train the model before making predictions."
             )
 
-        return (self.__predict(x) > self.threshold).astype(int)
+        return (self.__predict(x, training) > self.threshold).astype(int)
 
     def predict_proba(self, x: np.ndarray) -> np.ndarray:
         """
@@ -149,7 +149,7 @@ class NeuralNetwork:
 
         return self.__predict(x)
 
-    def __predict(self, x: np.ndarray) -> np.ndarray:
+    def __predict(self, x: np.ndarray, training: bool = False) -> np.ndarray:
         """
         Make a prediction with the neural network
 
@@ -162,8 +162,24 @@ class NeuralNetwork:
 
         x = x.T
         for layer in self.layers:
-            x = layer.forward(x)
+            x = layer.forward(x, training)
         return x
+
+    def predicts(self, x: np.ndarray, training: bool = False) -> np.ndarray:
+        """
+        Make predictions with the neural network
+
+        Args:
+        x: np.ndarray - input data
+
+        Returns:
+        np.ndarray - predicted output
+        """
+
+        predictions = []
+        for i in range(x.shape[0]):
+            predictions.append(self.predict(x[i : i + 1], training=training))
+        return np.array(predictions).squeeze()
 
     def fit(
         self,
@@ -281,7 +297,7 @@ class NeuralNetwork:
                 y_batch = y_train_split[i : i + batch_size]
 
                 # Forward pass
-                y_pred = self.__predict(x_batch)
+                y_pred = self.predicts(x_batch, training=True)
 
                 # Compute loss and gradients
                 loss_value = self.loss.compute(y_batch.reshape(1, -1), y_pred)
@@ -294,7 +310,7 @@ class NeuralNetwork:
                 self.__callbacks("on_batch_end", i // batch_size)
 
             # Evaluate the model on the validation set
-            val_pred = self.__predict(x_val_split)
+            val_pred = self.predicts(x_val_split, training=False)
             val_loss_value = self.loss.compute(y_val_split, val_pred)
 
             # Save history

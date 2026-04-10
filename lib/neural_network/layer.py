@@ -39,6 +39,7 @@ class Layer:
     activation: ActivationFunction
     last_aggregation_values: np.ndarray
     last_inputs: np.ndarray
+    dropout_mask: np.ndarray
 
     def __init__(
         self,
@@ -72,9 +73,9 @@ class Layer:
             2.0 / nb_inputs
         )
 
-    def forward(self, inputs: np.ndarray) -> np.ndarray:
+    def forward(self, inputs: np.ndarray, training: bool) -> np.ndarray:
         """
-        Performs the forward pass through the layer.
+        Performs the forward pass through the layer. Input must be of shape (nb_inputs, batches).
 
         Args:
             inputs (np.ndarray): The input data to the layer of shape (nb_inputs, batch_size).
@@ -82,7 +83,14 @@ class Layer:
         self.last_inputs = inputs
         z = self.weights @ inputs + self.bias
         self.last_aggregation_values = z
-        return self.activation.compute(z)
+        a = self.activation.compute(z)
+
+        if training and self.dropout_rate > 0:
+            self.dropout_mask = (np.random.rand(*a.shape) > self.dropout_rate).astype(float)
+            a *= self.dropout_mask
+            a /= (1.0 - self.dropout_rate)
+
+        return a
 
     def backward(self, product_last: np.ndarray, learning_rate: float) -> np.ndarray:
         """

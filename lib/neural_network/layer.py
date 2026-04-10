@@ -1,22 +1,10 @@
 """
-azeazezae
+Layer module
 """
 
 from __future__ import annotations
 import numpy as np
 from .activation.base import ActivationFunction
-
-# class Layer {
-#     + int neurons
-#     + ndarray weights
-#     + float dropout_rate
-#     + ActivationFunction activation
-
-#     + None __init__(int neurons, float dropout_rate, ActivationFunction activation)
-#     + ndarray forward(ndarray inputs)
-#     + ndarray backward(ndarray dz)
-# }
-
 
 class Layer:
     """
@@ -85,10 +73,10 @@ class Layer:
         self.last_aggregation_values = z
         a = self.activation.compute(z)
 
-        if training and self.dropout_rate > 0:
-            self.dropout_mask = (np.random.rand(*a.shape) > self.dropout_rate).astype(float)
-            a *= self.dropout_mask
-            a /= (1.0 - self.dropout_rate)
+        # if training and self.dropout_rate > 0:
+        #     self.dropout_mask = (np.random.rand(*a.shape) > self.dropout_rate).astype(float)
+        #     a *= self.dropout_mask
+        #     a /= (1.0 - self.dropout_rate)
 
         return a
 
@@ -107,13 +95,13 @@ class Layer:
         # dz is neurones lines and batches columns.
         dz = product_last * self.activation.derivative(self.last_aggregation_values)
 
-        if self.dropout_rate > 0:
-            dz *= self.dropout_mask
-            dz /= (1.0 - self.dropout_rate)
+        # if self.dropout_rate > 0:
+        #     dz *= self.dropout_mask
+        #     dz /= (1.0 - self.dropout_rate)
 
         # dw is neurons lines and nb_inputs columns.
         dw = dz @ self.last_inputs.T
-        db = np.sum(dz, axis=1, keepdims=True)
+        db = np.mean(dz, axis=1, keepdims=True)
 
         # Update weights and biases
         self.weights -= dw * learning_rate

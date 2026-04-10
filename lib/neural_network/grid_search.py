@@ -6,6 +6,7 @@ from typing import List, Dict, Any, TypedDict, Tuple
 from concurrent.futures import ThreadPoolExecutor
 from itertools import product
 
+import asyncio
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -152,6 +153,22 @@ class GridSearch:
             "network": network,
         }
 
+    async def _train_combination_async(
+        self,
+        combination_index: Tuple[
+            int, Dict[str, Any], np.ndarray, np.ndarray, np.ndarray, np.ndarray
+        ],
+    ) -> Result:
+        return self._train_combination(combination_index)
+
+    def _train_combination_thread(
+        self,
+        combination_index: Tuple[
+            int, Dict[str, Any], np.ndarray, np.ndarray, np.ndarray, np.ndarray
+        ],
+    ) -> Result:
+        return asyncio.run(self._train_combination_async(combination_index))
+    
     def search(
         self,
         params: Params,
@@ -193,7 +210,7 @@ class GridSearch:
             # Multi-threaded execution
             with ThreadPoolExecutor(max_workers=self.num_threads) as executor:
                 futures = {
-                    executor.submit(self._train_combination, task): task[0]
+                    executor.submit(self._train_combination_thread, task): task[0]
                     for task in tasks
                 }
 
@@ -331,7 +348,7 @@ class GridSearch:
         ax_roc.set_title("ROC Curves")
         ax_roc.set_xlabel("False Positive Rate")
         ax_roc.set_ylabel("True Positive Rate")
-        # ax_roc.legend()
+        ax_roc.legend()
 
         # List all combinations with their corresponding names
         output_dict = {

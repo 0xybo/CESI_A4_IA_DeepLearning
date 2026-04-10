@@ -314,3 +314,29 @@ class Evaluation:
         self.populated_confusion_matrix = True
 
         return self.confusion_matrix_cache
+
+    def draw_loss_history(self, ax: Optional[Axes] = None) -> None:
+        """
+        Draws the loss history of the neural network during training.
+        Args:
+            ax (Optional[Axes]): An optional matplotlib Axes object to draw the loss history on.
+                If None, a new figure and axes will be created.
+        Actions:
+            Plots the loss history using matplotlib.
+        """
+        if self.neural_network is None:
+            raise ValueError("Neural network not set.")
+
+        if ax is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(1, 1, 1)
+
+        ax.plot([history['loss'] for history in self.neural_network.history], label="Loss History")
+        ax.plot([history['val_loss'] for history in self.neural_network.history], label="Validation Loss History")
+        ax.set_xlabel("Epochs")
+        ax.set_ylabel("Loss")
+        ax.set_title("Loss History")
+        ax.legend()
+
+        if ax is None:
+            plt.show()

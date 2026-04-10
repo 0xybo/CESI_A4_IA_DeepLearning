@@ -35,11 +35,13 @@ class BinaryCrossEntropySigmoid(LossFunction):
     """
 
     def compute(self, y_train: np.ndarray, y_pred: np.ndarray) -> float:
-        return np.mean(
-            np.maximum(y_pred, 0)
-            - y_pred * y_train
-            + np.log(1 + np.exp(-np.abs(y_pred)))
-        )
+        # Clip y_pred to prevent log(0)
+        y_pred = 1 / (1 + np.exp(-y_pred))  # Apply sigmoid to y_pred
+        y_pred = np.clip(y_pred, 1e-15, 1 - 1e-15)
+        print("LOSS :", y_pred)
+        return -np.mean(
+            y_train * np.log(y_pred) + (1 - y_train) * np.log(1 - y_pred)
+        )  # pyright: ignore[reportReturnType]
 
     def derivative(
         self,
@@ -52,7 +54,7 @@ class BinaryCrossEntropySigmoid(LossFunction):
         return (y_pred - y_train) / (batch_size)
 
     def __str__(self) -> str:
-        return "Binary Cross-Entropy Loss"
+        return "Binary Cross-Entropy (Sigmoid) Loss"
 
     def __repr__(self) -> str:
         return self.__str__()

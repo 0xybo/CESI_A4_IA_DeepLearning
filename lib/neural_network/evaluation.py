@@ -98,6 +98,7 @@ class Evaluation:
             "Precision": self.precision(),
             "Recall": self.recall(),
             "F1 Score": self.f1_score(),
+            "F2 Score": self.f_score(2),
             "AUC": self.auc(),
             "Loss": self.loss(),
             "True Positives": self.confusion_matrix_cache[0],
@@ -169,19 +170,27 @@ class Evaluation:
         )
 
     @__confusion_matrix_guard
-    def f1_score(self) -> float:
-        """Calculates and returns the F1 score of the neural network.
+    def f_score(self, beta: float = 1.0) -> float:
+        """Calculates and returns the F-score of the neural network.
         Returns:
-            float: The F1 score value.
+            float: The F-score value.
         """
         precision: float = self.precision()
         recall: float = self.recall()
 
         return (
-            2 * (precision * recall) / (precision + recall)
-            if (precision + recall) > 0
+            (1 + beta**2) * (precision * recall) / (beta**2 * precision + recall)
+            if (beta**2 * precision + recall) > 0
             else 0.0
         )
+    
+    def f1_score(self) -> float:
+        """
+        Calculates and returns the F1 score of the neural network.
+        Returns:
+            float: The F1 score value.
+        """
+        return self.f_score(beta=1.0)
 
     def auc(self) -> float:
         """
@@ -189,14 +198,14 @@ class Evaluation:
         Returns:
             float: The AUC value.
         """
-        true_positives_rate_list, false_positives_rate_list = (
+        true_positives_rate_list, false_positives_rate_list, _ = (
             self.calculate_roc_points()
         )
-        return np.trapezoid(true_positives_rate_list, false_positives_rate_list)
+        return -np.trapezoid(true_positives_rate_list, false_positives_rate_list)
 
     def calculate_roc_points(
         self, neural_network: Optional[NeuralNetwork] = None
-    ) -> Tuple[List[float], List[float]]:
+    ) -> Tuple[List[float], List[float], Dict[str, List[int,int,int,int]]]:
         """
         Calculates the true positive rate and false positive rate lists for the ROC curve.
         Args:
@@ -216,12 +225,13 @@ class Evaluation:
         thresholds = np.linspace(0, 1, num=100)
         true_positives_rate_list: List[float] = []
         false_positives_rate_list: List[float] = []
-
+        confusion_matrix_dict: Dict[str, List[int,int,int,int]] = {}
         for threshold in thresholds:
             y_pred: np.ndarray = (y_pred_prob >= threshold).astype(int)
             tp, fp, tn, fn = self.__calculate_confusion_matrix(
                 y_true=self.y_validation, y_pred=y_pred.reshape(self.y_validation.shape)
             )
+            confusion_matrix_dict[str(round(threshold, 2))] = [tp, fp, tn, fn]
             true_positives_rate_list.append(
                 tp / (tp + fn) if (tp + fn) > 0 else 0.0
             )
@@ -229,7 +239,7 @@ class Evaluation:
                 fp / (fp + tn) if (fp + tn) > 0 else 0.0
             )
 
-        return true_positives_rate_list, false_positives_rate_list
+        return true_positives_rate_list, false_positives_rate_list, confusion_matrix_dict
 
     def draw_roc(self, ax: Optional[Axes] = None) -> None:
         """
@@ -245,7 +255,7 @@ class Evaluation:
         if self.neural_network is None:
             raise ValueError("Neural network not set.")
 
-        true_positives_rate_list, false_positives_rate_list = (
+        true_positives_rate_list, false_positives_rate_list, confusion_matrix_dict = (
             self.calculate_roc_points()
         )
 
@@ -340,3 +350,28 @@ class Evaluation:
 
         if ax is None:
             plt.show()
+
+    def best_thresholds(self) -> List[Tuple[float, float]]:
+        """
+        Determines the best threshold for classification based on the F1 score.
+        Returns:
+            List[Tuple[float, float]]: A list of tuples containing the F2 score and corresponding threshold.
+        """
+        if self.neural_network is None:
+            raise ValueError("Neural network not set.")
+
+        _, _, confusion_matrix_dict = self.calculate_roc_points()
+        threshold_f2_score_list: List[Tuple[float, float]] = []
+        
+        for threshold_str, (tp, fp, tn, fn) in confusion_matrix_dict.items():
+            precision: float = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+            recall: float = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+            f2_score: float = (
+                (1 + 2**2) * (precision * recall) / (2**2 * precision + recall)
+                if (2**2 * precision + recall) > 0
+                else 0.0
+            )
+            threshold_f2_score_list.append((f2_score,  round(float(threshold_str), 2)))
+        threshold_f2_score_list.sort(key=lambda x: x[0], reverse=True)
+        
+        return threshold_f2_score_list

@@ -17,6 +17,7 @@ from .activation.base import ActivationFunction
 #     + ndarray backward(ndarray dz)
 # }
 
+
 class Layer:
     """
     Class representing a layer in a neural network.
@@ -30,6 +31,7 @@ class Layer:
         dropout_rate (float): The dropout rate for regularization.
         activation (ActivationFunction): The activation function used in the layer.
     """
+
     neurons: int
     weights: np.ndarray
     bias: np.ndarray
@@ -39,11 +41,11 @@ class Layer:
     last_inputs: np.ndarray
 
     def __init__(
-            self,
-            neurons: int,
-            dropout_rate: float,
-            activation: ActivationFunction
-        ) -> None:
+        self,
+        neurons: int,
+        activation: ActivationFunction,
+        dropout_rate: float = 0.2,
+    ) -> None:
         """
         Initializes the Layer instance.
 
@@ -56,23 +58,26 @@ class Layer:
         self.dropout_rate = dropout_rate
         self.activation = activation
         self.weights = np.array([])
-        self.bias = np.random.rand(neurons, 1)
+        self.bias = np.zeros((neurons, 1))
 
     def set_nb_inputs(self, nb_inputs: int) -> None:
         """
         Sets the number of input features and initializes the weights accordingly.
+        Uses He initialization for better convergence with ReLU activations.
 
         Args:
             nb_inputs (int): The number of input features.
         """
-        self.weights = np.random.rand(self.neurons, nb_inputs)
+        self.weights = np.random.randn(self.neurons, nb_inputs) * np.sqrt(
+            2.0 / nb_inputs
+        )
 
     def forward(self, inputs: np.ndarray) -> np.ndarray:
         """
-        Performs the forward pass through the layer. Input must be of shape (nb_inputs, 1).
+        Performs the forward pass through the layer.
 
         Args:
-            inputs (np.ndarray): The input data to the layer.
+            inputs (np.ndarray): The input data to the layer of shape (nb_inputs, batch_size).
         """
         self.last_inputs = inputs
         z = self.weights @ inputs + self.bias
@@ -81,27 +86,33 @@ class Layer:
 
     def backward(self, product_last: np.ndarray, learning_rate: float) -> np.ndarray:
         """
-        Performs the backward pass through the layer.
-        product_last must be of shape (neurons, 1).
+        Performs the backward pass through the layer using batch gradient descent.
 
         Args:
-            product_last (np.ndarray): The product of the gradient of the loss with respect 
-                to the output of the previous layer and the weights of the previous layer.
+            product_last (np.ndarray): Gradient from next layer, shape (neurons, batch_size).
             learning_rate (float): The learning rate for updating the weights.
 
         Returns:
-            np.ndarray: The product of the gradient of the loss with respect to the output of the
-              layer and the weights of the layer.
+            np.ndarray: Gradient to pass to previous layer, shape (nb_inputs, batch_size).
         """
-        # dz is neurones lines and 1 column.
+        # dz: element-wise product of gradient and activation derivative
+        # Shape: (neurons, batch_size)
         dz = product_last * self.activation.derivative(self.last_aggregation_values)
 
-        # dw is neurons lines and nb_inputs columns.
-        dw = dz @ self.last_inputs.T
-        db = dz
+        # Compute average gradients over batch
+        batch_size = dz.shape[1]
 
+        # dw: weight gradients, shape (neurons, nb_inputs)
+        # CRITICAL: Normalize by batch_size to get average gradient
+        dw = (dz @ self.last_inputs.T) / batch_size
+
+        # db: bias gradients, averaged across batch
+        # Shape: (neurons, 1)
+        db = np.mean(dz, axis=1, keepdims=True)
+
+        # Update weights and biases
         self.weights -= dw * learning_rate
         self.bias -= db * learning_rate
 
-        # return a matrix of shape (nb_inputs, 1)
+        # Return gradient for previous layer: shape (nb_inputs, batch_size)
         return self.weights.T @ dz

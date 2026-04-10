@@ -1,13 +1,16 @@
 """
 Tanh Activation Function Implementation
 """
-from .base import ActivationFunction
+
 import numpy as np
+from .base import ActivationFunction  # pylint: disable=relative-beyond-top-level
+
 
 class Tanh(ActivationFunction):
     """
     Tanh Activation Function
     """
+
     def compute(self, x: np.ndarray) -> np.ndarray:
         """
         Computes the Tanh activation function on the input data.
@@ -31,4 +34,16 @@ class Tanh(ActivationFunction):
             np.ndarray: The derivative of the Tanh activation function.
         """
         tanh_x = self.compute(x)
-        return 1 - tanh_x ** 2
+        return 1 - tanh_x**2
+
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the Tanh activation function.
+
+        Returns:
+            str: The name of the activation function.
+        """
+        return "tanh"
+
+    def __repr__(self) -> str:
+        return self.__str__()

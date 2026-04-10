@@ -44,7 +44,13 @@ class CategoricalCrossEntropy(LossFunction):
             np.sum(y_train * np.log(y_pred), axis=1)
         )  # pyright: ignore[reportReturnType]
 
-    def derivative(self, y_train: np.ndarray, y_pred: np.ndarray) -> float:
+    def derivative(self, y_train: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
         # Clip y_pred to prevent division by zero
         y_pred = np.clip(y_pred, 1e-15, 1 - 1e-15)
         return (y_pred - y_train) / y_train.shape[0]
+
+    def __str__(self) -> str:
+        return "Categorical Cross-Entropy"
+
+    def __repr__(self) -> str:
+        return self.__str__()

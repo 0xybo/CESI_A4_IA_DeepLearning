@@ -58,6 +58,7 @@ class NeuralNetwork:
     threshold: float
     inputs: int
     trained: bool = False
+    rng: np.random.Generator
 
     def __init__(self, layers: List[Layer], loss: LossFunction, inputs: int) -> None:
         self.layers = layers
@@ -74,7 +75,7 @@ class NeuralNetwork:
         self.learning_rate = 0.0
         self.threshold = 0.5
         self.inputs = inputs
-
+        self.rng = np.random.default_rng(42)
         self.__param_layers()
 
     def add_layer(self, layer: Layer) -> None:
@@ -257,7 +258,7 @@ class NeuralNetwork:
 
         # Shuffle the training data
         indices = np.arange(x_train.shape[0])
-        np.random.shuffle(indices)
+        self.rng.shuffle(indices)
         x_train = x_train[indices]
         y_train = y_train[indices]
 

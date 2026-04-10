@@ -129,9 +129,9 @@ class NeuralNetwork:
                 "Neural network not trained yet. Please train the model before making predictions."
             )
 
-        return (self.__predict(x, training) > self.threshold).astype(int)
-
-    def predict_proba(self, x: np.ndarray) -> np.ndarray:
+        return self.__predict(x, training=training)
+        
+    def predict_proba(self, x: np.ndarray, training: bool = False) -> np.ndarray:
         """
         Make a probability prediction with the neural network
 
@@ -147,9 +147,22 @@ class NeuralNetwork:
                 "Neural network not trained yet. Please train the model before making predictions."
             )
 
-        return self.__predict(x)
+        return self.__predict_proba(x, training=training)
 
     def __predict(self, x: np.ndarray, training: bool = False) -> np.ndarray:
+        """
+        Make a prediction with the neural network
+
+        Args:
+        x: np.ndarray - input data
+
+        Returns:
+        np.ndarray - predicted output
+        """
+
+        return (self.__predict_proba(x, training=training) > self.threshold).astype(int)
+
+    def __predict_proba(self, x: np.ndarray, training: bool = False) -> np.ndarray:
         """
         Make a prediction with the neural network
 
@@ -164,22 +177,6 @@ class NeuralNetwork:
         for layer in self.layers:
             x = layer.forward(x, training)
         return x
-
-    def predicts(self, x: np.ndarray, training: bool = False) -> np.ndarray:
-        """
-        Make predictions with the neural network
-
-        Args:
-        x: np.ndarray - input data
-
-        Returns:
-        np.ndarray - predicted output
-        """
-
-        predictions = []
-        for i in range(x.shape[0]):
-            predictions.append(self.predict(x[i : i + 1], training=training))
-        return np.array(predictions).squeeze()
 
     def fit(
         self,
@@ -207,20 +204,18 @@ class NeuralNetwork:
             learning_rate: float - learning rate used during training
             threshold: float - threshold used for binary classification
         """
-
-        return asyncio.run(
-            self.__fit(
-                x_train,
-                y_train,
-                epochs,
-                batch_size,
-                validation_split,
-                learning_rate,
-                threshold,
-            )
+        
+        self.__fit(
+            x_train,
+            y_train,
+            epochs,
+            batch_size,
+            validation_split,
+            learning_rate,
+            threshold,
         )
-
-    async def __fit(
+            
+    def __fit(
         self,
         x_train: np.ndarray,
         y_train: np.ndarray,
@@ -260,6 +255,12 @@ class NeuralNetwork:
 
         self.__callbacks("on_train_begin")
 
+        # Shuffle the training data
+        indices = np.arange(x_train.shape[0])
+        np.random.shuffle(indices)
+        x_train = x_train[indices]
+        y_train = y_train[indices]
+
         for epoch in range(epochs):
             # Check if the training has been cancelled by a callback
             # For example, a callback like EarlyStopping can set
@@ -271,12 +272,6 @@ class NeuralNetwork:
             self.epoch = epoch
 
             self.__callbacks("on_epoch_begin", epoch)
-
-            # Shuffle the training data
-            indices = np.arange(x_train.shape[0])
-            np.random.shuffle(indices)
-            x_train = x_train[indices]
-            y_train = y_train[indices]
 
             # Split the training data into training and validation sets
             split_index = int(x_train.shape[0] * (1 - validation_split))
@@ -297,7 +292,7 @@ class NeuralNetwork:
                 y_batch = y_train_split[i : i + batch_size]
 
                 # Forward pass
-                y_pred = self.predicts(x_batch, training=True)
+                y_pred = self.__predict_proba(x_batch, training=True)
 
                 # Compute loss and gradients
                 loss_value = self.loss.compute(y_batch.reshape(1, -1), y_pred)
@@ -310,8 +305,8 @@ class NeuralNetwork:
                 self.__callbacks("on_batch_end", i // batch_size)
 
             # Evaluate the model on the validation set
-            val_pred = self.predicts(x_val_split, training=False)
-            val_loss_value = self.loss.compute(y_val_split, val_pred)
+            val_pred = self.__predict_proba(x_val_split, training=False)
+            val_loss_value = self.loss.compute(y_val_split.reshape(1, -1), val_pred)
 
             # Save history
             self.history.append(

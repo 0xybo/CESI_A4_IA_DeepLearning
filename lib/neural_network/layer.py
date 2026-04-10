@@ -1,22 +1,10 @@
 """
-azeazezae
+Layer module
 """
 
 from __future__ import annotations
 import numpy as np
 from .activation.base import ActivationFunction
-
-# class Layer {
-#     + int neurons
-#     + ndarray weights
-#     + float dropout_rate
-#     + ActivationFunction activation
-
-#     + None __init__(int neurons, float dropout_rate, ActivationFunction activation)
-#     + ndarray forward(ndarray inputs)
-#     + ndarray backward(ndarray dz)
-# }
-
 
 class Layer:
     """
@@ -115,9 +103,11 @@ class Layer:
         dw = dz @ self.last_inputs.T
         db = np.sum(dz, axis=1, keepdims=True)
 
+        # Gradient for previous layer: shape (nb_inputs, batch_size)
+        grad = self.weights.T @ dz
+        
         # Update weights and biases
         self.weights -= dw * learning_rate
         self.bias -= db * learning_rate
 
-        # Return gradient for previous layer: shape (nb_inputs, batch_size)
-        return self.weights.T @ dz
+        return grad

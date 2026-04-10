@@ -103,19 +103,14 @@ class Layer:
         Returns:
             np.ndarray: Gradient to pass to previous layer, shape (nb_inputs, batch_size).
         """
-        # dz: element-wise product of gradient and activation derivative
-        # Shape: (neurons, batch_size)
         dz = product_last * self.activation.derivative(self.last_aggregation_values)
 
-        # Compute average gradients over batch
-        batch_size = dz.shape[1]
+        if self.dropout_rate > 0:
+            dz *= self.dropout_mask
+            dz /= (1.0 - self.dropout_rate)
 
-        # dw: weight gradients, shape (neurons, nb_inputs)
-        # CRITICAL: Normalize by batch_size to get average gradient
-        dw = (dz @ self.last_inputs.T) / batch_size
-
-        # db: bias gradients, averaged across batch
-        # Shape: (neurons, 1)
+        # dw is neurons lines and nb_inputs columns.
+        dw = dz @ self.last_inputs.T
         db = np.sum(dz, axis=1, keepdims=True)
 
         # Update weights and biases

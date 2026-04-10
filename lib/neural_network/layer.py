@@ -108,7 +108,7 @@ class Layer:
 
         # db: bias gradients, averaged across batch
         # Shape: (neurons, 1)
-        db = np.mean(dz, axis=1, keepdims=True)
+        db = np.sum(dz, axis=1, keepdims=True)
 
         # Update weights and biases
         self.weights -= dw * learning_rate

@@ -223,10 +223,10 @@ class Evaluation:
                 y_true=self.y_validation, y_pred=y_pred.reshape(self.y_validation.shape)
             )
             true_positives_rate_list.append(
-                1 - tp / (tp + fn) if (tp + fn) > 0 else 0.0
+                tp / (tp + fn) if (tp + fn) > 0 else 0.0
             )
             false_positives_rate_list.append(
-                1 - fp / (fp + tn) if (fp + tn) > 0 else 0.0
+                fp / (fp + tn) if (fp + tn) > 0 else 0.0
             )
 
         return true_positives_rate_list, false_positives_rate_list

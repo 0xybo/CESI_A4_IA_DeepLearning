@@ -101,11 +101,13 @@ class Layer:
 
         # dw is neurons lines and nb_inputs columns.
         dw = dz @ self.last_inputs.T
-        db = np.mean(dz, axis=1, keepdims=True)
+        db = np.sum(dz, axis=1, keepdims=True)
 
+        # Gradient for previous layer: shape (nb_inputs, batch_size)
+        grad = self.weights.T @ dz
+        
         # Update weights and biases
         self.weights -= dw * learning_rate
         self.bias -= db * learning_rate
 
-        # Return gradient for previous layer: shape (nb_inputs, batch_size)
-        return self.weights.T @ dz
+        return grad

@@ -255,6 +255,12 @@ class NeuralNetwork:
 
         self.__callbacks("on_train_begin")
 
+        # Shuffle the training data
+        indices = np.arange(x_train.shape[0])
+        np.random.shuffle(indices)
+        x_train = x_train[indices]
+        y_train = y_train[indices]
+
         for epoch in range(epochs):
             # Check if the training has been cancelled by a callback
             # For example, a callback like EarlyStopping can set
@@ -266,12 +272,6 @@ class NeuralNetwork:
             self.epoch = epoch
 
             self.__callbacks("on_epoch_begin", epoch)
-
-            # Shuffle the training data
-            indices = np.arange(x_train.shape[0])
-            np.random.shuffle(indices)
-            x_train = x_train[indices]
-            y_train = y_train[indices]
 
             # Split the training data into training and validation sets
             split_index = int(x_train.shape[0] * (1 - validation_split))
@@ -306,7 +306,7 @@ class NeuralNetwork:
 
             # Evaluate the model on the validation set
             val_pred = self.__predict_proba(x_val_split, training=False)
-            val_loss_value = self.loss.compute(y_val_split, val_pred)
+            val_loss_value = self.loss.compute(y_val_split.reshape(1, -1), val_pred)
 
             # Save history
             self.history.append(

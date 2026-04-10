@@ -94,7 +94,8 @@ class Layer:
 
     def backward(self, product_last: np.ndarray, learning_rate: float) -> np.ndarray:
         """
-        Performs the backward pass through the layer using batch gradient descent.
+        Performs the backward pass through the layer.
+        product_last must be of shape (neurons, batches).
 
         Args:
             product_last (np.ndarray): Gradient from next layer, shape (neurons, batch_size).
@@ -103,6 +104,7 @@ class Layer:
         Returns:
             np.ndarray: Gradient to pass to previous layer, shape (nb_inputs, batch_size).
         """
+        # dz is neurones lines and batches columns.
         dz = product_last * self.activation.derivative(self.last_aggregation_values)
 
         if self.dropout_rate > 0:

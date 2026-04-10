@@ -30,7 +30,7 @@ class LossFunction(ABC):
         """
 
     @abstractmethod
-    def derivative(self, y_train: np.ndarray, y_pred: np.ndarray) -> float:
+    def derivative(self, y_train: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
         """
         Compute the derivative of the loss function with respect to the predicted outputs.
 
@@ -38,5 +38,5 @@ class LossFunction(ABC):
         - y_train (np.ndarray): The true labels for the training data.
         - y_pred (np.ndarray): The predicted outputs for the training data.
         Returns:
-        - float: The computed derivative value.
+        - np.ndarray: The computed derivative values.
         """

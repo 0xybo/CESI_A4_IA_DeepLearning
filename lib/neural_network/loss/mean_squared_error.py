@@ -34,8 +34,11 @@ class MeanSquaredError(LossFunction):
     def compute(self, y_train: np.ndarray, y_pred: np.ndarray) -> float:
         return np.mean((y_train - y_pred) ** 2)  # pyright: ignore[reportReturnType]
 
-    def derivative(self, y_train: np.ndarray, y_pred: np.ndarray) -> float:
-        print('=' * 80)
-        print('y_train', y_train.shape)
-        print('y_pred', y_pred.shape)
+    def derivative(self, y_train: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
         return 2 / y_train.shape[0] * (y_pred - y_train)
+
+    def __str__(self) -> str:
+        return "Mean Squared Error"
+
+    def __repr__(self) -> str:
+        return self.__str__()

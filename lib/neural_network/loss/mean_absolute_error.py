@@ -36,5 +36,11 @@ class MeanAbsoluteError(LossFunction):
     def compute(self, y_train: np.ndarray, y_pred: np.ndarray) -> float:
         return np.mean(np.abs(y_train - y_pred))  # pyright: ignore[reportReturnType]
 
-    def derivative(self, y_train: np.ndarray, y_pred: np.ndarray) -> float:
+    def derivative(self, y_train: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
         return np.sign(y_pred - y_train) / y_train.shape[0]
+
+    def __str__(self) -> str:
+        return "Mean Absolute Error"
+
+    def __repr__(self) -> str:
+        return self.__str__()

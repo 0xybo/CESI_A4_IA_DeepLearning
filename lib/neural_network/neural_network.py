@@ -3,7 +3,8 @@ Neural Network class
 """
 
 from __future__ import annotations
-from typing import List, Optional, TypedDict
+from typing import List, TypedDict
+import asyncio
 import numpy as np
 from .layer import Layer
 from .callback.base import Callback
@@ -39,6 +40,7 @@ class NeuralNetwork:
     batch_size: Optional[int] - batch size used during training
     validation_split: Optional[float] - percentage of training data used for validation
     learning_rate: Optional[float] - learning rate used during training
+    threshold: float - threshold used for binary classification
     """
 
     layers: List[Layer]
@@ -46,14 +48,16 @@ class NeuralNetwork:
     callbacks: List[Callback]
     fiting: bool
     history: List[History]
-    x_train: Optional[np.ndarray]
-    y_train: Optional[np.ndarray]
-    epochs: Optional[int]
-    epoch: Optional[int]
-    batch_size: Optional[int]
-    validation_split: Optional[float]
-    learning_rate: Optional[float]
+    x_train: np.ndarray
+    y_train: np.ndarray
+    epochs: int
+    epoch: int
+    batch_size: int
+    validation_split: float
+    learning_rate: float
+    threshold: float
     inputs: int
+    trained: bool = False
 
     def __init__(self, layers: List[Layer], loss: LossFunction, inputs: int) -> None:
         self.layers = layers
@@ -61,13 +65,14 @@ class NeuralNetwork:
         self.callbacks = []
         self.fiting = False
         self.history = []
-        self.x_train = None
-        self.y_train = None
-        self.epochs = None
-        self.epoch = None
-        self.batch_size = None
-        self.validation_split = None
-        self.learning_rate = None
+        self.x_train = np.array([])
+        self.y_train = np.array([])
+        self.epochs = 0
+        self.epoch = 0
+        self.batch_size = 0
+        self.validation_split = 0.0
+        self.learning_rate = 0.0
+        self.threshold = 0.5
         self.inputs = inputs
 
         self.__param_layers()
@@ -101,9 +106,50 @@ class NeuralNetwork:
     def __callbacks(self, event: str, *args, **kwargs) -> None:
         for callback in self.callbacks:
             getattr(callback, event)(self, *args, **kwargs)
-            getattr(callback, f"{event}_async")(self, *args, **kwargs)
+            # Call the asynchronous version of the callback if it exists
+            # This asynchronous is not awaited, it is just called in parallel
+            # This allows to not block the training process while the callback is running
+            asyncio.create_task(
+                getattr(callback, f"{event}_async")(self, *args, **kwargs)
+            )
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """
+        Make a prediction with the neural network
+
+        Args:
+        x: np.ndarray - input data
+
+        Returns:
+        np.ndarray - predicted output
+        """
+
+        if not self.trained:
+            raise ValueError(
+                "Neural network not trained yet. Please train the model before making predictions."
+            )
+
+        return (self.__predict(x) > self.threshold).astype(int)
+
+    def predict_proba(self, x: np.ndarray) -> np.ndarray:
+        """
+        Make a probability prediction with the neural network
+
+        Args:
+        x: np.ndarray - input data
+
+        Returns:
+        np.ndarray - predicted probabilities
+        """
+
+        if not self.trained:
+            raise ValueError(
+                "Neural network not trained yet. Please train the model before making predictions."
+            )
+
+        return self.__predict(x)
+
+    def __predict(self, x: np.ndarray) -> np.ndarray:
         """
         Make a prediction with the neural network
 
@@ -119,30 +165,15 @@ class NeuralNetwork:
             x = layer.forward(x)
         return x
 
-    def predicts(self, x: np.ndarray) -> np.ndarray:
-        """
-        Make predictions with the neural network
-
-        Args:
-        x: np.ndarray - input data
-
-        Returns:
-        np.ndarray - predicted output
-        """
-
-        predictions = []
-        for i in range(x.shape[0]):
-            predictions.append(self.predict(x[i : i + 1]))
-        return np.array(predictions).squeeze()
-
     def fit(
         self,
         x_train: np.ndarray,
         y_train: np.ndarray,
-        epochs: int,
-        batch_size: int,
-        validation_split: float,
-        learning_rate: float,
+        epochs: int = 10,
+        batch_size: int = 32,
+        validation_split: float = 0.2,
+        learning_rate: float = 0.01,
+        threshold: float = 0.5,
     ) -> None:
         """
         Train the neural network
@@ -158,14 +189,56 @@ class NeuralNetwork:
             batch_size: int - batch size used during training
             validation_split: float - percentage of training data used for validation
             learning_rate: float - learning rate used during training
+            threshold: float - threshold used for binary classification
+        """
+
+        return asyncio.run(
+            self.__fit(
+                x_train,
+                y_train,
+                epochs,
+                batch_size,
+                validation_split,
+                learning_rate,
+                threshold,
+            )
+        )
+
+    async def __fit(
+        self,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        epochs: int = 10,
+        batch_size: int = 32,
+        validation_split: float = 0.2,
+        learning_rate: float = 0.01,
+        threshold: float = 0.5,
+    ) -> None:
+        """
+        Train the neural network
+
+        Features :
+        - Cross-validation : split the training data into training and validation sets and evaluate
+          the model on the validation set at each epoch
+
+        Args:
+            x_train: np.ndarray - training data
+            y_train: np.ndarray - training labels
+            epochs: int - number of epochs to train the neural network
+            batch_size: int - batch size used during training
+            validation_split: float - percentage of training data used for validation
+            learning_rate: float - learning rate used during training
+            threshold: float - threshold used for binary classification
         """
         self.fiting = True
+        self.trained = False
         self.x_train = x_train
         self.y_train = y_train
         self.epochs = epochs
         self.batch_size = batch_size
         self.validation_split = validation_split
         self.learning_rate = learning_rate
+        self.threshold = threshold
 
         self.history = []
 
@@ -208,14 +281,11 @@ class NeuralNetwork:
                 y_batch = y_train_split[i : i + batch_size]
 
                 # Forward pass
-                y_pred = self.predict(x_batch)
+                y_pred = self.__predict(x_batch)
 
                 # Compute loss and gradients
-                loss_value = self.loss.compute(y_batch, y_pred)
-                loss_gradients = self.loss.derivative(y_batch.T, y_pred)
-                
-                print('=' * 80)
-                print('loss_gradients', loss_gradients.shape)
+                loss_value = self.loss.compute(y_batch.reshape(1, -1), y_pred)
+                loss_gradients = self.loss.derivative(y_batch.reshape(1, -1), y_pred)
 
                 # Backward pass
                 for layer in reversed(self.layers):
@@ -224,7 +294,7 @@ class NeuralNetwork:
                 self.__callbacks("on_batch_end", i // batch_size)
 
             # Evaluate the model on the validation set
-            val_pred = self.predicts(x_val_split)
+            val_pred = self.__predict(x_val_split)
             val_loss_value = self.loss.compute(y_val_split, val_pred)
 
             # Save history
@@ -232,9 +302,9 @@ class NeuralNetwork:
                 {
                     "loss": loss_value,
                     "val_loss": val_loss_value,
-                    "y_pred": val_pred,
                     "x_train": x_batch,
                     "y_train": y_batch,
+                    "y_pred": val_pred,
                 }
             )
 
@@ -242,3 +312,19 @@ class NeuralNetwork:
 
         self.__callbacks("on_train_end")
         self.fiting = False
+        self.trained = True
+
+    def __str__(self) -> str:
+        """
+        String representation of the neural network
+        """
+        result = "NeuralNetwork("
+        for i, layer in enumerate(self.layers):
+            result += f"{layer.neurons}:{layer.activation}"
+            if i < len(self.layers) - 1:
+                result += "->"
+        result += ")"
+        return result
+
+    def __repr__(self) -> str:
+        return self.__str__()

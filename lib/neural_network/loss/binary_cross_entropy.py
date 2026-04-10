@@ -12,6 +12,8 @@ The derivative of the Binary Cross-Entropy loss with respect to the predictions 
 dL/dy_pred = (y_pred - y_train) / (y_pred * (1 - y_pred) * N)
 """
 
+from __future__ import annotations
+
 import numpy as np
 from .base import LossFunction
 
@@ -43,8 +45,15 @@ class BinaryCrossEntropy(LossFunction):
         self,
         y_train: np.ndarray,
         y_pred: np.ndarray,
-    ) -> float:
+    ) -> np.ndarray:
         # Clip y_pred to prevent division by zero
         y_pred = np.clip(y_pred, 1e-15, 1 - 1e-15)
         y_one_pred = np.clip(1 - y_pred, 1e-15, 1 - 1e-15)
-        return (y_pred - y_train) / (y_pred * y_one_pred * y_train.shape[0])
+        batch_size = y_pred.shape[1] if y_pred.ndim > 1 else y_pred.shape[0]
+        return (y_pred - y_train) / (y_pred * y_one_pred * batch_size)
+
+    def __str__(self) -> str:
+        return "Binary Cross-Entropy Loss"
+
+    def __repr__(self) -> str:
+        return self.__str__()

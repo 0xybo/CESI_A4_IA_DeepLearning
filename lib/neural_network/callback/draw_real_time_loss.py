@@ -60,3 +60,9 @@ class DrawRealTimeLoss(Callback):  # pylint: disable=too-few-public-methods
         self.axes.autoscale_view()
         plt.draw()
         plt.pause(0.01)
+
+    def __str__(self) -> str:
+        return "DrawRealTimeLoss"
+
+    def __repr__(self) -> str:
+        return self.__str__()

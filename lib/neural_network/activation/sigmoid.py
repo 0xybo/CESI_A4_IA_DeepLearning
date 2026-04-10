@@ -1,13 +1,16 @@
 """
 Caca Activation Function Implementation
 """
-from .base import ActivationFunction
+
 import numpy as np
+from .base import ActivationFunction  # pylint: disable=relative-beyond-top-level
+
 
 class Sigmoid(ActivationFunction):
     """
     Sigmoid Activation Function
     """
+
     def compute(self, x: np.ndarray) -> np.ndarray:
         """
         Computes the Sigmoid activation function on the input data.
@@ -32,3 +35,9 @@ class Sigmoid(ActivationFunction):
         """
         sigmoid_x = self.compute(x)
         return sigmoid_x * (1 - sigmoid_x)
+
+    def __str__(self) -> str:
+        return "Sigmoid"
+
+    def __repr__(self) -> str:
+        return self.__str__()

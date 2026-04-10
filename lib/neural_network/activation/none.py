@@ -12,6 +12,7 @@ class NoActivation(ActivationFunction):
     """
 
     def compute(self, x: np.ndarray) -> np.ndarray:
+        print("NONE : ", x)
         return x
 
     def derivative(self, x: np.ndarray) -> np.ndarray:

@@ -340,8 +340,8 @@ class GridSearch:
         ax_roc = fig.add_subplot(3, 2, 6)
         evaluation = Evaluation(x_val, y_val)
         for i, result in enumerate(results):
-            fpr, tpr = evaluation.calculate_roc_points(result["network"])
-            ax_roc.plot(fpr, tpr, label=f"{i+1} (AUC: {result['metrics']['AUC']:.2f})")
+            fpr, tpr, _ = evaluation.calculate_roc_points(result["network"])
+            ax_roc.plot(tpr, fpr, label=f"{i+1} (AUC: {result['metrics']['AUC']:.2f})")
         ax_roc.plot(
             [0, 1], [0, 1], "k--", label="Random Classifier"
         )  # Diagonal line for reference

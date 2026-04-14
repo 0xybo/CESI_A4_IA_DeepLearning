@@ -35,7 +35,7 @@ def test_generate_combinations():
         ],
     }
 
-    combinations = grid_search._GridSearch__generate_combinations(params)  # type: ignore # pylint: disable=protected-access
+    combinations = grid_search.generate_combinations(params)  # type: ignore # pylint: disable=protected-access
 
     print("Generated combinations:")
     for i, combination in enumerate(combinations):

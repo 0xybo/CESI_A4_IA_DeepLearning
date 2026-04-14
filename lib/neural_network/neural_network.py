@@ -6,9 +6,11 @@ from __future__ import annotations
 from typing import List, TypedDict
 import asyncio
 import numpy as np
+import threading
 from .layer import Layer
 from .callback.base import Callback
 from .loss import LossFunction
+from ..utils.run_coroutine_sync import run_coroutine_sync
 
 
 class History(TypedDict):
@@ -60,7 +62,14 @@ class NeuralNetwork:
     trained: bool = False
     rng: np.random.Generator
 
-    def __init__(self, layers: List[Layer], loss: LossFunction, inputs: int) -> None:
+    def __init__(
+        self,
+        layers: List[Layer],
+        loss: LossFunction,
+        inputs: int,
+        seed: int | None = None,
+        name: str = "NeuralNetwork",
+    ) -> None:
         self.layers = layers
         self.loss = loss
         self.callbacks = []
@@ -75,7 +84,9 @@ class NeuralNetwork:
         self.learning_rate = 0.0
         self.threshold = 0.5
         self.inputs = inputs
-        self.rng = np.random.default_rng(42)
+        self.name = name
+        # Use thread-specific RNG to avoid contention in multi-threaded scenarios
+        self.rng = np.random.default_rng(seed)
         self.__param_layers()
 
     def add_layer(self, layer: Layer) -> None:
@@ -110,9 +121,9 @@ class NeuralNetwork:
             # Call the asynchronous version of the callback if it exists
             # This asynchronous is not awaited, it is just called in parallel
             # This allows to not block the training process while the callback is running
-            asyncio.create_task(
-                getattr(callback, f"{event}_async")(self, *args, **kwargs)
-            )
+            # asyncio.create_task(
+            #     getattr(callback, f"{event}_async")(self, *args, **kwargs)
+            # )
 
     def predict(self, x: np.ndarray, training: bool = False) -> np.ndarray:
         """
@@ -131,7 +142,7 @@ class NeuralNetwork:
             )
 
         return self.__predict(x, training=training)
-        
+
     def predict_proba(self, x: np.ndarray, training: bool = False) -> np.ndarray:
         """
         Make a probability prediction with the neural network
@@ -205,7 +216,13 @@ class NeuralNetwork:
             learning_rate: float - learning rate used during training
             threshold: float - threshold used for binary classification
         """
-        
+
+        # Check if the training is already in progress
+        if self.fiting:
+            raise ValueError(
+                "Training is already in progress. Please wait for it to finish."
+            )
+
         self.__fit(
             x_train,
             y_train,
@@ -215,7 +232,7 @@ class NeuralNetwork:
             learning_rate,
             threshold,
         )
-            
+
     def __fit(
         self,
         x_train: np.ndarray,

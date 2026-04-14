@@ -2,7 +2,7 @@
 	"configurations": [
 		{
 			"console": "integratedTerminal",
-			"module": "lib.neural_network.test_grid_search",
+			"module": "src.grid_search",
 			"name": "Python Debugger: Current File",
 			"request": "launch",
 			"type": "debugpy"

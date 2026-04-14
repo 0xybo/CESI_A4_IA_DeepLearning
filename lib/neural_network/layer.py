@@ -6,6 +6,7 @@ from __future__ import annotations
 import numpy as np
 from .activation.base import ActivationFunction
 
+
 class Layer:
     """
     Class representing a layer in a neural network.
@@ -35,6 +36,7 @@ class Layer:
         neurons: int,
         activation: ActivationFunction,
         dropout_rate: float = 0.2,
+        seed: int | None = None,
     ) -> None:
         """
         Initializes the Layer instance.
@@ -43,13 +45,15 @@ class Layer:
             neurons (int): The number of neurons in the layer.
             dropout_rate (float): The dropout rate for regularization.
             activation (ActivationFunction): The activation function used in the layer.
+            seed (int | None): Random seed for reproducibility. If None, uses a random seed.
         """
         self.neurons = neurons
         self.dropout_rate = dropout_rate
         self.activation = activation
         self.weights = np.array([])
         self.bias = np.zeros((neurons, 1))
-        self.rng = np.random.default_rng(42)
+        # Use a unique seed per instance to avoid thread contention
+        self.rng = np.random.default_rng(seed)
 
     def set_nb_inputs(self, nb_inputs: int) -> None:
         """
@@ -76,9 +80,11 @@ class Layer:
         a = self.activation.compute(z)
 
         if training and self.dropout_rate > 0:
-            self.dropout_mask = (self.rng.random(a.shape) > self.dropout_rate).astype(float)
+            self.dropout_mask = (self.rng.random(a.shape) > self.dropout_rate).astype(
+                float
+            )
             a *= self.dropout_mask
-            a /= (1.0 - self.dropout_rate)
+            a /= 1.0 - self.dropout_rate
 
         return a
 
@@ -99,7 +105,7 @@ class Layer:
 
         if self.dropout_rate > 0:
             dz *= self.dropout_mask
-            dz /= (1.0 - self.dropout_rate)
+            dz /= 1.0 - self.dropout_rate
 
         # dw is neurons lines and nb_inputs columns.
         dw = dz @ self.last_inputs.T

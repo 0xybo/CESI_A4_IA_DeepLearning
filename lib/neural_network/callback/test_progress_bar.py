@@ -3,7 +3,7 @@ Test the ProgressBar callback to ensure it displays correctly during training.
 """
 
 import numpy as np
-from .progress_bar import ProgressBar  # pylint: disable=relative-beyond-top-level
+from .progress_bar import EpochProgressBar  # pylint: disable=relative-beyond-top-level
 from ..neural_network import NeuralNetwork  # pylint: disable=relative-beyond-top-level
 from ..loss.binary_cross_entropy import (  # pylint: disable=relative-beyond-top-level
     BinaryCrossEntropy,
@@ -41,7 +41,7 @@ def test_progress_bar_calculation():
     """
     Test that ProgressBar correctly calculates accuracy and formats output.
     """
-    callback = ProgressBar()
+    callback = EpochProgressBar()
 
     # Test accuracy calculation
     y_true = np.array([[0], [1], [1], [0]])
@@ -61,7 +61,7 @@ def test_progress_bar_formatting():
     """
     Test that ProgressBar correctly formats progress bars and times.
     """
-    callback = ProgressBar()
+    callback = EpochProgressBar()
 
     # Test progress bar formatting
     bar1 = (
@@ -101,7 +101,7 @@ def test_progress_bar_callbacks():
     Test that ProgressBar callbacks execute without errors.
     """
     neural_network = NeuralNetworkPlaceholder()
-    callback = ProgressBar()
+    callback = EpochProgressBar()
 
     # Test on_epoch_begin
     callback.on_epoch_begin(neural_network, 0)

@@ -9,14 +9,16 @@ from .evaluation import Evaluation
 
 from .callback.draw_real_time_loss import DrawRealTimeLoss
 from .callback.early_stopping import EarlyStopping
-from .callback.progress_bar import ProgressBar
+from .callback.train_progress_bar import TrainProgressBar
+from .callback.epoch_progress_bar import EpochProgressBar
 
 __all__ = [
     "NeuralNetwork",
     "Callback",
     "DrawRealTimeLoss",
     "EarlyStopping",
-    "ProgressBar",
+    "TrainProgressBar",
+    "EpochProgressBar",
     "Layer",
     "Evaluation",
 ]

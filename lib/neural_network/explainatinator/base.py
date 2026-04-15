@@ -12,11 +12,9 @@ class Explainatinator:
         techniques such as LIME and SHAP.
     """
     model: NeuralNetwork
-    x_data: np.ndarray
 
-    def __init__(self, model: NeuralNetwork, x_data: np.ndarray) -> None:
+    def __init__(self, model: NeuralNetwork) -> None:
         self.model = model
-        self.x_data = x_data
 
     @abstractmethod
-    def explain(self, x: np.ndarray, y: np.ndarray) -> np.ndarray: ...
+    def explain(self, x: np.ndarray) -> np.ndarray: ...

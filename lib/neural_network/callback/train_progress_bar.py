@@ -9,7 +9,7 @@ Displays a progress bar during training with useful metrics like:
 """
 
 from __future__ import annotations
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from .base import Callback  # pylint: disable=relative-beyond-top-level
 from ..neural_network import NeuralNetwork  # pylint: disable=relative-beyond-top-level
 
@@ -87,6 +87,7 @@ class TrainProgressBar(Callback):
             metrics = {
                 "loss": f"{loss:.4f}",
                 "val_loss": f"{val_loss:.4f}",
+                "lr": f"{neural_network.learning_rate:.4e}"
             }
         else:
             metrics = {}

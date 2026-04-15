@@ -118,8 +118,8 @@ class Evaluation:
         if self.neural_network is None:
             raise ValueError("Neural network not set.")
 
-        y_pred_prob: np.ndarray = self.neural_network.predict_proba(self.x_validation).T
-        return self.neural_network.loss.compute(y_pred_prob, self.y_validation)
+        y_pred_prob: np.ndarray = self.neural_network.predict_proba(self.x_validation)
+        return self.neural_network.loss.compute(self.y_validation.reshape(1, -1), y_pred_prob)
 
     @__confusion_matrix_guard
     def accuracy(self) -> float:

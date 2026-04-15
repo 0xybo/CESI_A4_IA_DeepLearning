@@ -30,10 +30,23 @@ y_validation = df_validation[TARGET_COLUMN].astype(int)
 # ╰────────────────────────────────────────────────────────╯
 
 grid_search_params: Params = {
-    "learning_rate": [0.01, 0.001],
-    "batch_size": [500],
-    "epochs": [100],
-    "loss": [MeanSquaredError(), BinaryCrossEntropy()],
+    "learning_rate": [
+        0.1,
+        # 0.01,
+        # 0.001
+    ],
+    "learning_rate_patience": [3],
+    "learning_rate_min": [1e-6],
+    "learning_rate_max": [0.1],
+    "batch_size": [
+        500,
+        1000
+    ],
+    "epochs": [500],
+    "loss": [
+        # MeanSquaredError(),
+        BinaryCrossEntropy()
+    ],
     "early_stopping_patience": [5],
     "architecture": [
         # Simple architecture : 1 hidden layer
@@ -42,11 +55,11 @@ grid_search_params: Params = {
             {"neurons": [1], "dropout_rate": [0.0], "activation": [Sigmoid()]},
         ],
         # Medium architecture : 2 hidden layers
-        # [
-        #     {"neurons": [64], "dropout_rate": [0.2], "activation": [Relu()]},
-        #     {"neurons": [32], "dropout_rate": [0.2], "activation": [Relu()]},
-        #     {"neurons": [1], "dropout_rate": [0.0], "activation": [Sigmoid()]},
-        # ],
+        [
+            {"neurons": [64], "dropout_rate": [0.2], "activation": [Relu()]},
+            {"neurons": [32], "dropout_rate": [0.2], "activation": [Relu()]},
+            {"neurons": [1], "dropout_rate": [0.0], "activation": [Sigmoid()]},
+        ],
         # Deep architecture : 3 hidden layers
         # [
         #     {"neurons": [128], "dropout_rate": [0.3], "activation": [Relu()]},
@@ -54,6 +67,20 @@ grid_search_params: Params = {
         #     {"neurons": [32], "dropout_rate": [0.2], "activation": [Relu()]},
         #     {"neurons": [1], "dropout_rate": [0.0], "activation": [Sigmoid()]},
         # ],
+        [
+            {"neurons": [16], "dropout_rate": [0.2], "activation": [Relu()]},
+            {"neurons": [8], "dropout_rate": [0.2], "activation": [Relu()]},
+            {"neurons": [4], "dropout_rate": [0.2], "activation": [Relu()]},
+            {"neurons": [2], "dropout_rate": [0.2], "activation": [Relu()]},
+            {"neurons": [1], "dropout_rate": [0.0], "activation": [Sigmoid()]},
+        ],
+        [
+            {"neurons": [32], "dropout_rate": [0.2], "activation": [Relu()]},
+            {"neurons": [8], "dropout_rate": [0.2], "activation": [Relu()]},
+            {"neurons": [4], "dropout_rate": [0.2], "activation": [Relu()]},
+            {"neurons": [2], "dropout_rate": [0.2], "activation": [Relu()]},
+            {"neurons": [1], "dropout_rate": [0.0], "activation": [Sigmoid()]},
+        ],
     ],
 }
 
@@ -65,16 +92,17 @@ gs = GridSearch(num_threads=1)
 
 print("Starting grid search...")
 
+date = time.strftime("%Y-%m-%d_%H-%M-%S")
+
 results = gs.search_and_compare(
     grid_search_params,
     X_train.to_numpy(),
     y_train.to_numpy(),
     X_validation.to_numpy(),
     y_validation.to_numpy(),
+    date=date,
+    draw=False
 )
-
-print("Grid search completed. Best configuration:")
-print(results)
 
 # ╭────────────────────────────────────────────────────────╮
 # │            SAVE GRID SEARCH RESULTS TO JSON            │
@@ -83,9 +111,13 @@ print(results)
 json.dump(
     results,
     open(
-        f"./grid_search_results/{time.strftime('%Y%m%d-%H%M%S')}_grid_search_results.json",
+        f"./grid_search_results/{date}.json",
         "w",
     ),
     indent=4,
-    default=lambda o: str(o) if not isinstance(o, (LossFunction, ActivationFunction)) else str(o),
+    default=lambda o: (
+        o.to_dict()
+        if hasattr(o, "to_dict")
+        else o if isinstance(o, (int, float, str, bool)) else str(o)
+    ),
 )

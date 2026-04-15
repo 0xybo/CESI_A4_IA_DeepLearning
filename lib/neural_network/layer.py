@@ -55,6 +55,21 @@ class Layer:
         # Use a unique seed per instance to avoid thread contention
         self.rng = np.random.default_rng(seed)
 
+    def to_dict(self) -> dict:
+        """
+        Custom dictionary representation for serialization.
+
+        Returns:
+            dict: A dictionary representation of the Layer instance.
+        """
+        return {
+            "neurons": self.neurons,
+            "dropout_rate": self.dropout_rate,
+            "activation": str(self.activation),
+            "weights": self.weights.tolist(),
+            "bias": self.bias.tolist(),
+        }
+
     def set_nb_inputs(self, nb_inputs: int) -> None:
         """
         Sets the number of input features and initializes the weights accordingly.

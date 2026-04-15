@@ -2,28 +2,28 @@
 Module for performing grid search on neural network hyperparameters.
 """
 
-from typing import List, Dict, Any, TypedDict, Tuple
+import threading
+from typing import List, Dict, Any, TypedDict, Tuple, Literal
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import product
-from tqdm import tqdm
-import threading
+from tqdm.auto import tqdm
 
 import numpy as np
-import pandas as pd
-import matplotlib
 import matplotlib.pyplot as plt
 
-from .callback.early_stopping import EarlyStopping
 from .layer import Layer
-from .activation.base import ActivationFunction
+from .evaluation import Evaluation
 from .loss.base import LossFunction
 from .neural_network import NeuralNetwork
-from .evaluation import Evaluation
+from .activation.base import ActivationFunction
+from .callback.early_stopping import EarlyStopping
+from .callback.train_progress_bar import TrainProgressBar
+from .callback.adaptive_learning_rate_reduce_on_plateau import ReduceOnPlateau
+from .callback.adaptive_learning_rate_step_decay import StepDecay
+from .callback.base import Callback
 
 # Lock for thread-safe matplotlib operations
 _matplotlib_lock = threading.Lock()
-
-from .callback.train_progress_bar import TrainProgressBar
 
 
 class LayerParams(TypedDict):
@@ -42,6 +42,8 @@ class Params(TypedDict):
     """
 
     learning_rate: List[float]
+    learning_rate_adaptive: List[Callback or None]
+
     batch_size: List[int]
     epochs: List[int]
 
@@ -59,7 +61,7 @@ class Result(TypedDict):
 
     combination: Dict[str, Any]
     metrics: Dict[str, float]
-    network: NeuralNetwork   
+    network: NeuralNetwork
 
 
 class GridSearch:
@@ -122,9 +124,13 @@ class GridSearch:
             name=f"Combination {combination_index[0]+1}",
         )
 
-        # network.add_callback(
-        #     EarlyStopping(patience=combination["early_stopping_patience"])
-        # )
+        network.add_callback(
+            EarlyStopping(patience=combination["early_stopping_patience"])
+        )
+
+        if combination["learning_rate_adaptive"] is not None:
+            network.add_callback(combination["learning_rate_adaptive"])
+
         network.add_callback(
             TrainProgressBar(
                 position=combination_index[0] + 1
@@ -276,6 +282,8 @@ class GridSearch:
         y_train: np.ndarray,
         x_val: np.ndarray,
         y_val: np.ndarray,
+        date: str = "",
+        draw: bool = True,
     ) -> List[Result]:
         """
         Performs grid search and compares the results based on validation metrics.
@@ -305,60 +313,246 @@ class GridSearch:
         # Use a lock to ensure thread-safe matplotlib operations
         # This prevents race conditions and global state corruption from multiple threads
         with _matplotlib_lock:
-            fig = plt.figure(figsize=(12, 8))
+            # +-----------------+-----------------+-----------------+
+            # |    Accuracy     |    Precision    |      Recall     |
+            # +-----------------+-----------------+-----------------+
+            # |     F1 Score    |     F2 Score    | Validation Loss |
+            # +-----------------+-----------------+-----------------+
+            # |           Learning rate           |      Legend     |
+            # +-----------------------------------+-----------------+
+            # |                Training Loss Curves                 |
+            # +-----------------------------------+-----------------+
+            # |                 Testing Loss Curves                 |
+            # +-----------------------------------------------------+
+            # |                     ROC Curves                      |
+            # +-----------------------------------------------------+
+
+            fig, axes = plt.subplots(6, 3, figsize=(8, 15), dpi=80)
 
             full_names = tuple(
                 self.__get_combination_name(result["combination"]) for result in results
             )
             names = tuple(str(i) for i in range(1, len(full_names) + 1))
 
+            # Print combination names and metrics for easier identification
+            text = []
+            for i, (full_name, result) in enumerate(zip(full_names, results)):
+                text.append(f"Combination {i+1}: {full_name}")
+            max_length = max(len(line) for line in text)
+            if draw:
+                print("")
+                print("=" * max_length)
+                for line in text:
+                    print(f"{line:<{max_length}}")
+                print("=" * max_length)
+            else:
+                with open(
+                    f"./grid_search_results/{date}.txt", "w", encoding="utf-8"
+                ) as f:
+                    f.write("\n".join(text))
+
             # Accuracy
-            ax_accuracy = fig.add_subplot(3, 2, 1)
+            ax_accuracy = axes[0, 0]
             ax_accuracy.bar(
                 names,
                 [result["metrics"]["Accuracy"] for result in results],
             )
             ax_accuracy.set_title("Validation Accuracy")
-            ax_accuracy.set_xticklabels(names)
+            for i, full_name in enumerate(full_names):
+                ax_accuracy.text(
+                    i,
+                    max(result["metrics"]["Accuracy"] for result in results) * 1.01,
+                    f"{results[i]["metrics"]["Accuracy"]:.4f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                    rotation=45,
+                )
+            ax_accuracy.set_ylim(
+                min(result["metrics"]["Accuracy"] for result in results) / 1.01,
+                max(result["metrics"]["Accuracy"] for result in results) * 1.2,
+            )
+            # ax_accuracy.set_xticklabels(names)
 
             # Precision
-            ax_precision = fig.add_subplot(3, 2, 2)
+            ax_precision = axes[0, 1]
             ax_precision.bar(
                 names,
                 [result["metrics"]["Precision"] for result in results],
             )
             ax_precision.set_title("Precision")
-            ax_precision.set_xticklabels(names)
+            for i, full_name in enumerate(full_names):
+                ax_precision.text(
+                    i,
+                    max(result["metrics"]["Precision"] for result in results) * 1.01,
+                    f"{results[i]["metrics"]["Precision"]:.4f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                    rotation=45,
+                )
+            ax_precision.set_ylim(
+                min(result["metrics"]["Precision"] for result in results) / 1.01,
+                max(result["metrics"]["Precision"] for result in results) * 1.2,
+            )
+            # ax_precision.set_xticklabels(names)
 
             # Recall
-            ax_recall = fig.add_subplot(3, 2, 3)
+            ax_recall = axes[0, 2]
             ax_recall.bar(
                 names,
                 [result["metrics"]["Recall"] for result in results],
             )
             ax_recall.set_title("Recall")
-            ax_recall.set_xticklabels(names)
+            for i, full_name in enumerate(full_names):
+                ax_recall.text(
+                    i,
+                    max(result["metrics"]["Recall"] for result in results) * 1.01,
+                    f"{results[i]["metrics"]["Recall"]:.4f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                    rotation=45,
+                )
+            ax_recall.set_ylim(
+                min(result["metrics"]["Recall"] for result in results) / 1.01,
+                max(result["metrics"]["Recall"] for result in results) * 1.2,
+            )
+            # ax_recall.set_xticklabels(names)
 
             # F1 Score
-            ax_f1 = fig.add_subplot(3, 2, 4)
+            ax_f1 = axes[1, 0]
             ax_f1.bar(
                 names,
                 [result["metrics"]["F1 Score"] for result in results],
             )
             ax_f1.set_title("F1 Score")
-            ax_f1.set_xticklabels(names)
+            for i, full_name in enumerate(full_names):
+                ax_f1.text(
+                    i,
+                    max(result["metrics"]["F1 Score"] for result in results) * 1.01,
+                    f"{results[i]["metrics"]["F1 Score"]:.4f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                    rotation=45,
+                )
+            ax_f1.set_ylim(
+                min(result["metrics"]["F1 Score"] for result in results) / 1.01,
+                max(result["metrics"]["F1 Score"] for result in results) * 1.2,
+            )
+            # ax_f1.set_xticklabels(names)
+
+            # F2 Score
+            ax_f2 = axes[1, 1]
+            ax_f2.bar(
+                names,
+                [result["metrics"]["F2 Score"] for result in results],
+            )
+            ax_f2.set_title("F2 Score")
+            for i, full_name in enumerate(full_names):
+                ax_f2.text(
+                    i,
+                    max(result["metrics"]["F2 Score"] for result in results) * 1.01,
+                    f"{results[i]["metrics"]["F2 Score"]:.4f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                    rotation=45,
+                )
+            ax_f2.set_ylim(
+                min(result["metrics"]["F2 Score"] for result in results) / 1.01,
+                max(result["metrics"]["F2 Score"] for result in results) * 1.2,
+            )
+            # ax_f2.set_xticklabels(names)
 
             # Validation Loss
-            ax_loss = fig.add_subplot(3, 2, 5)
+            ax_loss = axes[1, 2]
             ax_loss.bar(
                 names,
                 [result["metrics"]["Loss"] for result in results],
             )
             ax_loss.set_title("Validation Loss")
-            ax_loss.set_xticklabels(names)
+            for i, full_name in enumerate(full_names):
+                ax_loss.text(
+                    i,
+                    max(result["metrics"]["Loss"] for result in results) * 1.01,
+                    f"{results[i]["metrics"]["Loss"]:.4f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                    rotation=45,
+                )
+            ax_loss.set_ylim(
+                min(result["metrics"]["Loss"] for result in results) / 1.01,
+                max(result["metrics"]["Loss"] for result in results) * 1.2,
+            )
+            # ax_loss.set_xticklabels(names)
+
+            # Learning rate curves
+            gs_lr_curves = axes[2, 0].get_gridspec()
+            for ax in axes[2, :-1]:
+                ax.remove()
+            ax_lr_curves = fig.add_subplot(gs_lr_curves[2, :-1])
+            lines = []
+            for i, result in enumerate(results):
+                history = result["network"].history
+                if history:
+                    lines += ax_lr_curves.plot(
+                        [entry["learning_rate"] for entry in history],
+                        label=f"{i+1} (Final: {history[-1]['learning_rate']:.4e})",
+                    )
+            ax_lr_curves.set_title("Learning Rate Curves")
+            ax_lr_curves.set_xlabel("Epoch")
+            ax_lr_curves.set_ylabel("Learning Rate")
+
+            # Legend
+            ax_legend = axes[2, 2]
+            ax_legend.axis("off")
+            ax_legend.legend(
+                lines,
+                [f"Combination {i+1}" for i in range(len(results))],
+                loc="center",
+                fontsize=8,
+            )
+
+            # Loss Curves
+            gs_loss_curves = axes[3, 0].get_gridspec()
+            for ax in axes[3, 0:]:
+                ax.remove()
+            ax_loss_curves = fig.add_subplot(gs_loss_curves[3, :])
+            for i, result in enumerate(results):
+                history = result["network"].history
+                if history:
+                    ax_loss_curves.plot(
+                        [entry["loss"] for entry in history],
+                        label=f"{i+1} (Final: {history[-1]['loss']:.4f})",
+                    )
+            ax_loss_curves.set_title("Training Loss Curves")
+            ax_loss_curves.set_xlabel("Epoch")
+            ax_loss_curves.set_ylabel("Loss")
+
+            # Testing Loss Curves
+            gs_test_loss_curves = axes[4, 0].get_gridspec()
+            for ax in axes[4, :]:
+                ax.remove()
+            ax_test_loss_curves = fig.add_subplot(gs_test_loss_curves[4, :])
+            for i, result in enumerate(results):
+                history = result["network"].history
+                if history:
+                    ax_test_loss_curves.plot(
+                        [entry["val_loss"] for entry in history],
+                        label=f"{i+1} (Final: {history[-1]['val_loss']:.4f})",
+                    )
+            ax_test_loss_curves.set_title("Testing Loss Curves")
+            ax_test_loss_curves.set_xlabel("Epoch")
+            ax_test_loss_curves.set_ylabel("Loss")
 
             # ROC Curves
-            ax_roc = fig.add_subplot(3, 2, 6)
+            gs_roc = axes[5, 0].get_gridspec()
+            for ax in axes[5, :]:
+                ax.remove()
+            ax_roc = fig.add_subplot(gs_roc[5, :])
             evaluation = Evaluation(x_val, y_val)
             for i, result in enumerate(results):
                 fpr, tpr, _ = evaluation.calculate_roc_points(result["network"])
@@ -371,10 +565,12 @@ class GridSearch:
             ax_roc.set_title("ROC Curves")
             ax_roc.set_xlabel("False Positive Rate")
             ax_roc.set_ylabel("True Positive Rate")
-            ax_roc.legend()
 
-            plt.tight_layout()
-            plt.show()
+            fig.tight_layout()
+            if draw:
+                plt.show()
+            else:
+                fig.savefig(f"./grid_search_results/{date}.png")
 
             # Close figure to prevent memory leaks
             plt.close(fig)

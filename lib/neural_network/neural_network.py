@@ -23,6 +23,7 @@ class History(TypedDict):
     y_pred: np.ndarray
     x_train: np.ndarray
     y_train: np.ndarray
+    learning_rate: float
 
 
 class NeuralNetwork:
@@ -88,6 +89,25 @@ class NeuralNetwork:
         # Use thread-specific RNG to avoid contention in multi-threaded scenarios
         self.rng = np.random.default_rng(seed)
         self.__param_layers()
+
+    def to_dict(self) -> dict:
+        return {
+            "layers": [layer.to_dict() for layer in self.layers],
+            "loss": str(self.loss),
+            "callbacks": [str(callback) for callback in self.callbacks],
+            "fiting": self.fiting,
+            # "history": self.history,
+            # "x_train": self.x_train.tolist(),
+            # "y_train": self.y_train.tolist(),
+            "epochs": self.epochs,
+            "epoch": self.epoch,
+            "batch_size": self.batch_size,
+            "validation_split": self.validation_split,
+            "learning_rate": self.learning_rate,
+            "threshold": self.threshold,
+            "inputs": self.inputs,
+            "trained": self.trained,
+        }
 
     def add_layer(self, layer: Layer) -> None:
         """
@@ -274,12 +294,12 @@ class NeuralNetwork:
         self.__callbacks("on_train_begin")
 
         # Shuffle the training data
-        indices = np.arange(x_train.shape[0])
+        indices = np.arange(self.x_train.shape[0])
         self.rng.shuffle(indices)
-        x_train = x_train[indices]
-        y_train = y_train[indices]
+        x_train = self.x_train[indices]
+        y_train = self.y_train[indices]
 
-        for epoch in range(epochs):
+        for epoch in range(self.epochs):
             # Check if the training has been cancelled by a callback
             # For example, a callback like EarlyStopping can set
             # self.fiting to False to stop the training process early
@@ -292,22 +312,22 @@ class NeuralNetwork:
             self.__callbacks("on_epoch_begin", epoch)
 
             # Split the training data into training and validation sets
-            split_index = int(x_train.shape[0] * (1 - validation_split))
-            x_train_split = x_train[:split_index]
-            y_train_split = y_train[:split_index]
-            x_val_split = x_train[split_index:]
-            y_val_split = y_train[split_index:]
+            split_index = int(self.x_train.shape[0] * (1 - self.validation_split))
+            x_train_split = self.x_train[:split_index]
+            y_train_split = self.y_train[:split_index]
+            x_val_split = self.x_train[split_index:]
+            y_val_split = self.y_train[split_index:]
 
             loss_value = 0.0
             x_batch: np.ndarray = np.array([])
             y_batch: np.ndarray = np.array([])
 
             # Train the model on the training set
-            for i in range(0, x_train_split.shape[0], batch_size):
-                self.__callbacks("on_batch_begin", i // batch_size)
+            for i in range(0, x_train_split.shape[0], self.batch_size):
+                self.__callbacks("on_batch_begin", i // self.batch_size)
 
-                x_batch = x_train_split[i : i + batch_size]
-                y_batch = y_train_split[i : i + batch_size]
+                x_batch = x_train_split[i : i + self.batch_size]
+                y_batch = y_train_split[i : i + self.batch_size]
 
                 # Forward pass
                 y_pred = self.__predict_proba(x_batch, training=True)
@@ -318,9 +338,9 @@ class NeuralNetwork:
 
                 # Backward pass
                 for layer in reversed(self.layers):
-                    loss_gradients = layer.backward(loss_gradients, learning_rate)
+                    loss_gradients = layer.backward(loss_gradients, self.learning_rate)
 
-                self.__callbacks("on_batch_end", i // batch_size)
+                self.__callbacks("on_batch_end", i // self.batch_size)
 
             # Evaluate the model on the validation set
             val_pred = self.__predict_proba(x_val_split, training=False)
@@ -334,6 +354,7 @@ class NeuralNetwork:
                     "x_train": x_batch,
                     "y_train": y_batch,
                     "y_pred": val_pred,
+                    "learning_rate": self.learning_rate,
                 }
             )
 

@@ -8,7 +8,7 @@ import numpy as np
 import math as math
 
 import matplotlib.pyplot as plt
-
+import pandas as pd
 
 from .base import Explainatinator
 
@@ -23,7 +23,7 @@ class SHAP(Explainatinator):
     num_samples: int
     feature_names: list[str]
 
-    def __init__(self, model, background_data, feature_names, num_samples=100):
+    def __init__(self, model, background_data: np.ndarray, feature_names: list, num_samples=100):
         super().__init__(model)
         self.background_data = background_data
         self.feature_names = feature_names
@@ -37,7 +37,7 @@ class SHAP(Explainatinator):
             return 1e6
         return (total_features - 1) / (math.comb(total_features, subset_size) * subset_size * (total_features - subset_size))
     
-    def explain(self, x):
+    def explain(self, x: np.ndarray):
         """
         Explain the prediction of the model for a given input x using SHAP values.
 
@@ -86,17 +86,20 @@ class SHAP(Explainatinator):
             x (np.ndarray): The input data for which to compute explanations. (shape: (n_samples, n_features))
             feature_names (list[str]): The names of the features in the input data.
         """
+        df = pd.DataFrame({
+            "Feature": self.feature_names,
+            "SHAP Value": shap_values.flatten()
+        })
+
+
         print(f"Base value: {base_value[0]:.4f}")
         print(f"Sum of SHAP values: {np.sum(shap_values):.4f}")
 
         if model_predictions is not None:
             print(f"Model prediction: {model_predictions[0]:.4f}")
             print(f"Sum of SHAP value and base value: {np.sum(shap_values) + base_value[0]:.4f}")
-        
-        for i in range(shap_values.shape[0]):
-            print("-" * 50)
-            print(f"Feature: {self.feature_names[i]}")
-            print(f"SHAP value: {shap_values[i][0]:.4f}")
+
+        print(df)
     
     def histogram(self, shap_values: np.ndarray, width: float = 10.0, height: float = 6.0) -> None:
         """
@@ -105,8 +108,13 @@ class SHAP(Explainatinator):
         Args:
             shap_values (np.ndarray): The SHAP values for each feature (shape: (n_features,)).
         """
+        df = pd.DataFrame({
+            'Feature': self.feature_names,
+            'Valeur': np.abs(shap_values.flatten())
+        }).sort_values('Valeur', ascending=False).reset_index(drop=True)
+        
         plt.figure(figsize=(width, height))
-        plt.bar(self.feature_names, shap_values.flatten())
+        plt.bar(df["Feature"],df["Valeur"])
         plt.xlabel("Features")
         plt.ylabel("SHAP Value")
         plt.title("SHAP Values for Each Feature")

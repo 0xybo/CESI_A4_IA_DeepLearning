@@ -5,4 +5,5 @@ numpy==2.4.2
 ipywidgets==8.1.8
 ipykernel==7.2.0
 ipython==9.11.0
+CodeCarbon==3.2.6
 tqdm==4.67.3

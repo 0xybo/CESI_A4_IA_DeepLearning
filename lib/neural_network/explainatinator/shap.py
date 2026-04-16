@@ -3,131 +3,177 @@ Implementation of SHAP (SHapley Additive exPlanations)
     for explaining the output of machine learning models.
 """
 import numpy as np
-import math
+
+# Module de mathématiques nommé math, que l'on renomme en math pour plus de clarté et de concision et de facilité d'utilisation et de compréhension et de lisibilité et de maintenabilité et de simplicité et de cohérence et de compatibilité et de portabilité et de flexibilité et de robustesse et de performance et d'efficacité et d'efficience et d'optimisation et de qualité et de fiabilité et de sécurité et de confidentialité et de conformité et de légalité et d'éthique et de responsabilité sociale.
+import math as math
+
+import matplotlib.pyplot as plt
+
+
 from .base import Explainatinator
 
 groups_list_type = list[tuple[int, ...]]
 
 class SHAP(Explainatinator):
     """
-    Class implementing SHAP (SHapley Additive exPlanations) for 
-        explaining the output of machine learning models.
+    Implementation of SHAP (SHapley Additive exPlanations) for explaining the output of machine learning models.
     """
+
+    background_data: np.ndarray
     num_samples: int
-    num_groups: int
-    data : np.ndarray
-    numpy_generator: np.random.Generator
+    feature_names: list[str]
 
-    def __init__(self, model, data: np.ndarray, num_samples: int = 50, num_groups: int = None) -> None:
-        """
-        Initializes the SHAP explainatinator with the given model and parameters for generating groups of features.
-
-        Args:
-            model: The machine learning model for which to generate explanations.
-            data: The training data used for generating explanations. This is necessary for computing the average values of features when generating the groups of features.
-            num_samples (int, optional): The number of samples to use for generating explanations 
-            num_groups (int, optional): The maximum number of groups to generate.
-        """
+    def __init__(self, model, background_data, feature_names, num_samples=100):
         super().__init__(model)
-        self.data = data
-
-        self.num_groups = num_groups if num_groups is not None else 2 ** data.shape[1]
+        self.background_data = background_data
+        self.feature_names = feature_names
         self.num_samples = num_samples
-        self.numpy_generator = np.random.default_rng(seed=42)
 
-
-
-    def __sample_coalitions(self, n_features: int, target: int) -> groups_list_type:
+    def subset_weight(self, subset_size: int, total_features: int) -> float:
         """
-        Generates random coalitions of features for a given target feature
-            ensuring that the target feature is not included in any coalition.
-
-        Args:
-            n_features (int): The total number of features in the input data.
-            target (int): The target feature for which to generate coalitions.
+        Calculate the weight of a subset of features based on its size and the total number of features.
         """
-        features = np.array([i for i in range(n_features) if i != target], dtype=int)
-
-        coalitions: groups_list_type = []
-        for _ in range(self.num_groups):
-            size = int(self.numpy_generator.integers(0, len(features) + 1))
-            S = tuple(self.numpy_generator.choice(features, size=size, replace=False))
-            coalitions.append(S)
-
-        return coalitions
+        if subset_size == 0 or subset_size == total_features:
+            return 1e6
+        return (total_features - 1) / (math.comb(total_features, subset_size) * subset_size * (total_features - subset_size))
     
-    def __weight(self, S_size: int, n_features: int) -> float:
+    def explain(self, x):
         """
-        Computes the weight of a coalition of features based on its size and the total number of features.
+        Explain the prediction of the model for a given input x using SHAP values.
 
         Args:
-            S_size (int): The size of the coalition of features.
-            n_features (int): The total number of features in the input data.
-        """
-        return (
-            math.factorial(S_size)
-            * math.factorial(n_features - S_size - 1)
-            / math.factorial(n_features)
-        )
-    
-    def __estimate_v(self, x: np.ndarray, S: tuple[int, ...], target_class: int) -> float:
-        """
-        Estimates the value of a coalition of features by sampling from the training data and computing the average prediction of the model for the masked input.
-        
-        Args:
-            x (np.ndarray): The input sample for which to compute the explanation.
-            S (tuple): The coalition of features for which to estimate the value.
-            target (int): The target feature for which to compute the explanation.
-        """
-        
-        idx = self.numpy_generator.choice(len(self.data), size=self.num_samples, replace=True)
-        masked = self.data[idx].copy()
-
-        if S:
-            s_idx = np.asarray(S, dtype=int)
-            masked[:, s_idx] = x[s_idx]
-
-        # Batch inference is significantly faster than one prediction per sample.
-        preds = self.model.predict_proba(masked)
-        return float(np.mean(preds[:, target_class]))
-
-    def explain(self, x: np.ndarray, target_class: int = 1) -> np.ndarray:
-        """
-        Computes the SHAP values for the given input data and target class.
-
-        Args:
-            x (np.ndarray): The input data for which to compute explanations.
-            target_class (int): The target class for which to compute explanations.
+            x (np.ndarray): The input data for which to explain the prediction. (shape: (n_features,))
 
         Returns:
-            np.ndarray: The SHAP values for the input data and target class.
+            np.ndarray: The SHAP values for each feature (shape: (n_features,)).
         """
-        n_samples, n_features = x.shape
-        shap_values = np.zeros((n_samples, n_features))
 
-        if target_class < 0:
-            raise ValueError("target_class must be non-negative")
+        n_features = x.shape[0]
 
-        for i_sample in range(n_samples):
-            x_i = x[i_sample]
+        reference_value = np.mean(self.background_data, axis=0)
 
-            for feature in range(n_features):
-                coalitions = self.__sample_coalitions(n_features, feature)
-                print(coalitions)
-                print(len(coalitions))
+        z_prime = np.random.binomial(1, 0.5, size=(self.num_samples, n_features))
 
-                phi = 0.0
+        z_data = np.zeros((self.num_samples, n_features))
+        weights = np.zeros(self.num_samples)
 
-                for S in coalitions:
-                    S_with_i = tuple(sorted(S + (feature,)))
+        for i in range(self.num_samples):
+            mask = z_prime[i]
 
-                    v_S = self.__estimate_v(x_i, S, target_class)
-                    v_S_i = self.__estimate_v(x_i, S_with_i, target_class)
+            z_data[i] = x * mask + reference_value * (1 - mask)
 
-                    w = self.__weight(len(S), n_features)
+            subset_size = np.sum(mask)
+            weights[i] = self.subset_weight(subset_size, n_features)
 
-                    phi += w * (v_S_i - v_S)
+        predictions = self.model.predict_proba(z_data)
 
-                shap_values[i_sample, feature] = phi
+        z_prime_aug = np.hstack((np.ones((self.num_samples, 1)), z_prime))
 
-        return shap_values
+        w = np.diag(weights)
+        xtw = z_prime_aug.T @ w
+        phi = np.linalg.inv(xtw @ z_prime_aug) @ xtw @ predictions.T
+
+        base_value = phi[0]
+        shap_values = phi[1:]
+
+        return shap_values, base_value
+
+    def print_stats(self, x: np.ndarray, shap_values: np.ndarray, base_value: float, model_predictions: np.ndarray = None) -> None:
+        """
+        Prints the SHAP values for the given input data and feature names.
+
+        Args:
+            x (np.ndarray): The input data for which to compute explanations. (shape: (n_samples, n_features))
+            feature_names (list[str]): The names of the features in the input data.
+        """
+        print(f"Base value: {base_value[0]:.4f}")
+        print(f"Sum of SHAP values: {np.sum(shap_values):.4f}")
+
+        if model_predictions is not None:
+            print(f"Model prediction: {model_predictions[0]:.4f}")
+            print(f"Sum of SHAP value and base value: {np.sum(shap_values) + base_value[0]:.4f}")
+        
+        for i in range(shap_values.shape[0]):
+            print("-" * 50)
+            print(f"Feature: {self.feature_names[i]}")
+            print(f"SHAP value: {shap_values[i][0]:.4f}")
+    
+    def histogram(self, shap_values: np.ndarray, width: float = 10.0, height: float = 6.0) -> None:
+        """
+        Plots a histogram of the SHAP values.
+
+        Args:
+            shap_values (np.ndarray): The SHAP values for each feature (shape: (n_features,)).
+        """
+        plt.figure(figsize=(width, height))
+        plt.bar(self.feature_names, shap_values.flatten())
+        plt.xlabel("Features")
+        plt.ylabel("SHAP Value")
+        plt.title("SHAP Values for Each Feature")
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.show()
+    
+    def waterfall(self, shap_values: np.ndarray, base_value: float, width: float = 10.0, height: float = 6.0) -> None:
+        """
+        Plot a waterfall chart from the base value by cumulatively adding SHAP values.
+
+        Args:
+            shap_values (np.ndarray): SHAP values for each feature (shape: (n_features,) or (n_features, 1)).
+            base_value (float): Base/origin model output value.
+            width (float): Figure width.
+            height (float): Figure height.
+        """
+        shap_values = np.asarray(shap_values, dtype=float).flatten()
+        base_scalar = float(np.asarray(base_value).flatten()[0])
+
+        if shap_values.size == 0:
+            raise ValueError("shap_values must contain at least one value")
+
+        if len(self.feature_names) != shap_values.size:
+            raise ValueError(
+                "feature_names length must match the number of SHAP values "
+                f"({len(self.feature_names)} != {shap_values.size})"
+            )
+
+        cumulative_start = np.concatenate(([base_scalar], base_scalar + np.cumsum(shap_values)[:-1]))
+        cumulative_end = cumulative_start + shap_values
+
+        bars_bottom = np.minimum(cumulative_start, cumulative_end)
+        bars_height = np.abs(shap_values)
+        colors = ["#2ca02c" if value >= 0 else "#d62728" for value in shap_values]
+
+        x_positions = np.arange(shap_values.size)
+        final_value = float(base_scalar + np.sum(shap_values))
+
+        plt.figure(figsize=(width, height))
+        plt.bar(
+            x_positions,
+            bars_height,
+            bottom=bars_bottom,
+            color=colors,
+            edgecolor="black",
+            width=0.8,
+        )
+
+        # Connect each bar to the next cumulative level for easier reading.
+        for i in range(shap_values.size - 1):
+            plt.plot(
+                [i + 0.4, i + 1 - 0.4],
+                [cumulative_end[i], cumulative_end[i]],
+                color="gray",
+                linestyle="--",
+                linewidth=1,
+                alpha=0.8,
+            )
+
+        plt.axhline(base_scalar, color="navy", linestyle=":", linewidth=1.5, label=f"Base: {base_scalar:.4f}")
+        plt.axhline(final_value, color="black", linestyle="-", linewidth=1.5, label=f"Output: {final_value:.4f}")
+
+        plt.xticks(x_positions, self.feature_names, rotation=45, ha="right")
+        plt.ylabel("Model output contribution")
+        plt.title("SHAP Waterfall Chart")
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+        

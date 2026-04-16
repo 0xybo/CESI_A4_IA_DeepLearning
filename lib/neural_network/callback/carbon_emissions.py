@@ -2,13 +2,12 @@ from .base import Callback  # pylint: disable=relative-beyond-top-level
 from ..neural_network import NeuralNetwork  # pylint: disable=relative-beyond-top-level
 from codecarbon import EmissionsTracker
 from codecarbon.output import EmissionsData
-from pandas import DataFrame, read_csv
+from pandas import DataFrame
 
 class CarbonEmissions(Callback):
 
 
     tracker: EmissionsTracker
-    project_name: str
     data: EmissionsData
 
     def __init__(self) -> None:
@@ -19,10 +18,10 @@ class CarbonEmissions(Callback):
             log_level="error"
         )
 
-    def on_train_begin(self, neural_network: "NeuralNetwork") -> None:  # type: ignore
+    def on_train_begin(self, _neural_network: "NeuralNetwork") -> None:  # type: ignore
         self.tracker.start()
         
-    def on_train_end(self, neural_network: "NeuralNetwork") -> None:  # type: ignore
+    def on_train_end(self, _neural_network: "NeuralNetwork") -> None:  # type: ignore
         self.tracker.stop()
         self.data = self.tracker.final_emissions_data
         

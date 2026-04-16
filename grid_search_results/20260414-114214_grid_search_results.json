@@ -1,0 +1,190 @@
+[
+    {
+        "combination": {
+            "learning_rate": 0.01,
+            "batch_size": 500,
+            "epochs": 100,
+            "loss": "Mean Squared Error",
+            "early_stopping_patience": 5,
+            "architecture": [
+                {
+                    "neurons": [
+                        32
+                    ],
+                    "dropout_rate": [
+                        0.2
+                    ],
+                    "activation": [
+                        "Relu"
+                    ]
+                },
+                {
+                    "neurons": [
+                        1
+                    ],
+                    "dropout_rate": [
+                        0.0
+                    ],
+                    "activation": [
+                        "Sigmoid"
+                    ]
+                }
+            ]
+        },
+        "metrics": {
+            "Accuracy": 0.6530110793423874,
+            "Precision": 0.27410035478966044,
+            "Recall": 0.8169184290030211,
+            "F1 Score": 0.4104743833017078,
+            "F2 Score": 0.5851547284137633,
+            "AUC": 0.7937197928753872,
+            "Loss": 0.2792834142064738,
+            "True Positives": "2704",
+            "False Positives": "7161",
+            "True Negatives": "11913",
+            "False Negatives": "606"
+        },
+        "network": "NeuralNetwork(32:Relu->1:Sigmoid)"
+    },
+    {
+        "combination": {
+            "learning_rate": 0.01,
+            "batch_size": 500,
+            "epochs": 100,
+            "loss": "Binary Cross-Entropy Loss",
+            "early_stopping_patience": 5,
+            "architecture": [
+                {
+                    "neurons": [
+                        32
+                    ],
+                    "dropout_rate": [
+                        0.2
+                    ],
+                    "activation": [
+                        "Relu"
+                    ]
+                },
+                {
+                    "neurons": [
+                        1
+                    ],
+                    "dropout_rate": [
+                        0.0
+                    ],
+                    "activation": [
+                        "Sigmoid"
+                    ]
+                }
+            ]
+        },
+        "metrics": {
+            "Accuracy": 0.6787884203002145,
+            "Precision": 0.2822182308037719,
+            "Recall": 0.7595166163141994,
+            "F1 Score": 0.41152398101162224,
+            "F2 Score": 0.567545602311721,
+            "AUC": 0.7778145746238136,
+            "Loss": 15.519699147113812,
+            "True Positives": "2514",
+            "False Positives": "6394",
+            "True Negatives": "12680",
+            "False Negatives": "796"
+        },
+        "network": "NeuralNetwork(32:Relu->1:Sigmoid)"
+    },
+    {
+        "combination": {
+            "learning_rate": 0.001,
+            "batch_size": 500,
+            "epochs": 100,
+            "loss": "Mean Squared Error",
+            "early_stopping_patience": 5,
+            "architecture": [
+                {
+                    "neurons": [
+                        32
+                    ],
+                    "dropout_rate": [
+                        0.2
+                    ],
+                    "activation": [
+                        "Relu"
+                    ]
+                },
+                {
+                    "neurons": [
+                        1
+                    ],
+                    "dropout_rate": [
+                        0.0
+                    ],
+                    "activation": [
+                        "Sigmoid"
+                    ]
+                }
+            ]
+        },
+        "metrics": {
+            "Accuracy": 0.6756165117941386,
+            "Precision": 0.2846397034775973,
+            "Recall": 0.788821752265861,
+            "F1 Score": 0.4183289273411841,
+            "F2 Score": 0.5824744567884711,
+            "AUC": 0.7927353063137463,
+            "Loss": 0.2611610210167666,
+            "True Positives": "2611",
+            "False Positives": "6562",
+            "True Negatives": "12512",
+            "False Negatives": "699"
+        },
+        "network": "NeuralNetwork(32:Relu->1:Sigmoid)"
+    },
+    {
+        "combination": {
+            "learning_rate": 0.001,
+            "batch_size": 500,
+            "epochs": 100,
+            "loss": "Binary Cross-Entropy Loss",
+            "early_stopping_patience": 5,
+            "architecture": [
+                {
+                    "neurons": [
+                        32
+                    ],
+                    "dropout_rate": [
+                        0.2
+                    ],
+                    "activation": [
+                        "Relu"
+                    ]
+                },
+                {
+                    "neurons": [
+                        1
+                    ],
+                    "dropout_rate": [
+                        0.0
+                    ],
+                    "activation": [
+                        "Sigmoid"
+                    ]
+                }
+            ]
+        },
+        "metrics": {
+            "Accuracy": 0.686874553252323,
+            "Precision": 0.2781043791241752,
+            "Recall": 0.7003021148036254,
+            "F1 Score": 0.3981107771575784,
+            "F2 Score": 0.5371958285052144,
+            "AUC": 0.7547197874900966,
+            "Loss": 16.215651573353018,
+            "True Positives": "2318",
+            "False Positives": "6017",
+            "True Negatives": "13057",
+            "False Negatives": "992"
+        },
+        "network": "NeuralNetwork(32:Relu->1:Sigmoid)"
+    }
+]

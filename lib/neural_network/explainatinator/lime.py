@@ -18,9 +18,10 @@ class LIME(Explainatinator):
             x = x.reshape(1, -1)
         
         y_pred = self.model.predict(x)
-        
+
+        generator = np.random.default_rng(42)
         # Créer perturbations: (num_perturbations, num_features)
-        noise = np.random.normal(0, sigma, size=(num_perturbations, x.shape[1]))
+        noise = generator.normal(0, sigma, size=(num_perturbations, x.shape[1]))
         
         # Ajouter le bruit à x pour créer les données perturbées
         perturbed_data = x + noise

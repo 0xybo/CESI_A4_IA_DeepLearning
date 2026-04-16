@@ -6,7 +6,6 @@ from pandas import DataFrame
 
 class CarbonEmissions(Callback):
 
-
     tracker: EmissionsTracker
     data: EmissionsData
 
@@ -20,12 +19,12 @@ class CarbonEmissions(Callback):
 
     def on_train_begin(self, _neural_network: "NeuralNetwork") -> None:  # type: ignore
         self.tracker.start()
-        
+
     def on_train_end(self, _neural_network: "NeuralNetwork") -> None:  # type: ignore
         self.tracker.stop()
         self.data = self.tracker.final_emissions_data
-        
-    def draw_result(self) -> DataFrame:
+
+    def get_result(self) -> DataFrame:
         return DataFrame({
             "timestamp": [self.data.timestamp],
             "duration": [self.data.duration],

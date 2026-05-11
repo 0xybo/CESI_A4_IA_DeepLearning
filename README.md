@@ -1,6 +1,5 @@
-# CESI A4 - Deep Learning Project
-
 <div align="center">
+  <h1>CESI A4 - Projet Deep Learning</h1>
   <h3>Implémentation d'un Framework de Réseau de Neurones à partir de Zéro</h3>
   <p><strong>Thomas VINET</strong> • <strong>Hugo HELM</strong> • <strong>Alban GODIER</strong></p>
   <p><em>CESI A4 - Module IA - Deep Learning</em></p>
